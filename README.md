@@ -9,7 +9,7 @@ A helper mod allowing additional upgrade paths to be made for towers.
 
 Toggle "Balanced Mode" to switch from being still only able get up to 5 upgrades in any one path and 2 in another, vs getting all vanilla upgrades you normally can as well as any/all available Paths++ upgrades.
 
-Toggling off Balanced Mod can also function well with Ultimate Crosspathing (assuming the Mod Creators were keeping it in mind while coding).
+Toggling off Balanced Mode can also function well with Ultimate Crosspathing, allowing you to get 5/5/5/5/... towers (assuming the Mod Creators were keeping it in mind while coding).
 
 ## Mods
 
@@ -124,15 +124,21 @@ public class BetterDarts : UpgradePlusPlus<DartMonkeyFourthPath>
         {
             damageModel.immuneBloonProperties &= ~BloonProperties.Frozen;
         }
+        
+        if (IsHighestUpgrade(towerModel))
+        {
+            // apply a custom display, if you want
+        }
     }
 }
 ```
 
 There are many familiar properties shared from `ModUpgrade` that all function basically the same, i.e. `Cost`, `Tier`, `Icon`, `Description`, `DisplayName` and `ApplyUpgrade`.
 
-If you do not specify a `Portrait`,
+If you do not specify a `Portrait`, the 000 tower portrait will be used.
 
 If your upgrade adds an ability to the tower, override the `Ability` property to be true.
+
 ### Upgrade effects
 
 When implementing `ApplyUpgrade` code, it's important for you to try to make as few assumptions as possible in order to increase compatability and prevent bugs with other paths.
