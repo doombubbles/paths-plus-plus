@@ -11,6 +11,10 @@ Toggle "Balanced Mode" to switch from being still only able get up to 5 upgrades
 
 Toggling off Balanced Mod can also function well with Ultimate Crosspathing (assuming the Mod Creators were keeping it in mind while coding).
 
+## Mods
+
+### [Tornado Wizards by doombubbles](https://github.com/doombubbles/tornado-wizards#readme)
+
 ## For Modders: Creating your own Path++ mod
 
 ### Reference Paths++ in your mod
@@ -50,6 +54,25 @@ The easiest way to reference the PathsPlusPlus dll is to put the following withi
     </ItemGroup>
     
 </Project>
+```
+
+</details>
+
+<details>
+<summary>GitHub Actions</summary>
+
+To download PathsPlusPlus within GitHub actions, add the following step: 
+
+```yaml
+- name: Download PathsPlusPlus
+  uses: dawidd6/action-download-artifact@v2
+  with:
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    workflow: build.yml
+    branch: main
+    name: PathsPlusPlus.dll
+    repo: doombubbles/paths-plus-plus
+    path: ${{ env.BLOONSTD6 }}/Mods/
 ```
 
 </details>
