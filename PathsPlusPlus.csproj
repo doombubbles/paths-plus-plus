@@ -15,4 +15,8 @@
     </ItemGroup>
 
     <Import Project="..\btd6.targets" />
+
+    <ItemGroup>
+        <EmbeddedResource Remove="Screenshot.png" />
+    </ItemGroup>
 </Project>

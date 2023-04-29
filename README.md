@@ -15,6 +15,8 @@ Toggling off Balanced Mode can also function well with Ultimate Crosspathing, al
 
 ### [Tornado Wizards by doombubbles](https://github.com/doombubbles/tornado-wizards#readme)
 
+![Screenshot](Screenshot.png)
+
 ## For Modders: Creating your own Path++ mod
 
 ### Reference Paths++ in your mod
