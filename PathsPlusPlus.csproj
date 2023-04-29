@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <RootNamespace>PathsPlusPlus</RootNamespace>
+        <Configurations>Debug;Release</Configurations>
+        <Nullable>enable</Nullable>
+        <AssemblyName>PathsPlusPlus</AssemblyName>
+        <LangVersion>latest</LangVersion>
+        <Optimize>False</Optimize>
+        <DebugType>embedded</DebugType>
+        <DocumentationFile>bin\Debug\PathsPlusPlus.xml</DocumentationFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <Content Include=".github\workflows\build.yml" />
+    </ItemGroup>
+
+    <Import Project="..\btd6.targets" />
+</Project>
