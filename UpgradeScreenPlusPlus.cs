@@ -10,6 +10,7 @@ using Il2CppAssets.Scripts.Unity.UI_New.Upgrade;
 using Il2CppSystem.Collections.Generic;
 using MelonLoader;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace PathsPlusPlus;
@@ -18,7 +19,7 @@ namespace PathsPlusPlus;
 internal class UpgradeScreenPlusPlus : MonoBehaviour
 {
     private const int TopBarHeight = 345;
-    private const int PathsSpacing = 220;
+    private const int PathsSpacing = 525;
 
     public UpgradeScreen upgradeScreen = null!;
     public ModHelperScrollPanel scrollPanel = null!;
@@ -64,7 +65,7 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
             {
                 upgradePath = Instantiate(upgradeScreen.path3Container, upgradePaths);
                 upgradePath.name = $"Path {pathPlusPlus.Path + 1} Upgrades";
-                upgradePath.transform.Translate(0, -delta, 0);
+                upgradePath.transform.TranslateScaled(new Vector3(0, -delta, 0));
 
                 for (var i = 0; i < upgradePath.transform.childCount; i++)
                 {
@@ -113,7 +114,7 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
                 upgradeDetails.Take(pathPlusPlus.Upgrades.Length).ToIl2CppReferenceArray(), null);
         }
 
-        scrollContent.sizeDelta = scrollContent.sizeDelta with { y = delta * 2.5f };
+        scrollContent.sizeDelta = scrollContent.sizeDelta with { y = delta };
         upgradePaths.localPosition = upgradePaths.localPosition with { y = y };
     }
 
@@ -181,6 +182,8 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
                     animator.speed = .75f;
                     animator.Play("PopupScaleIn");
                 }
+
+                upgradeDetails.GetComponentInChildren<EventTrigger>(true).enabled = false;
             }
         }
     }
