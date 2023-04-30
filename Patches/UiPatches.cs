@@ -230,14 +230,12 @@ internal class UpgradeObject_CheckBlockedPath
         var tiers = tower.GetAllTiers();
         var thisTier = tiers[path];
 
-        __result = thisTier;
-        for (var i = thisTier; i < max; i++)
+        for (var i = thisTier; i <= max; i++)
         {
+            __result = i;
             tiers[path] = i + 1;
-
             if (!PathsPlusPlusMod.ValidTiers(tiers))
             {
-                __result = i;
                 return;
             }
         }

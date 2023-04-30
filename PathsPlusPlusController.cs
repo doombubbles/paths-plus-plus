@@ -162,10 +162,13 @@ internal class PathsPlusPlusController : MonoBehaviour
             {
                 var path = list[i];
                 button.gameObject.SetActive(true);
+                button.upgradeObject.enabled = true;
                 button.InitForTower(tower, path.Id);
             }
             else
             {
+                button.upgradeObject.tts = null;
+                button.upgradeObject.enabled = false;
                 button.gameObject.SetActive(false);
             }
         }
