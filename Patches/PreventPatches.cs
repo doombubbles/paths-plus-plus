@@ -1,5 +1,7 @@
-﻿using HarmonyLib;
+﻿using BTD_Mod_Helper.Extensions;
+using HarmonyLib;
 using Il2CppAssets.Scripts.Simulation.Input;
+using Il2CppAssets.Scripts.Simulation.Objects;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity.Bridge;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
@@ -78,7 +80,7 @@ internal static class UpgradeObject_CheckRestrictedPath
     private static bool Prefix(UpgradeObject __instance, ref int __result)
     {
         if (__instance.path < 3) return true;
-        
+
         __result = 5;
         return false;
     }
@@ -118,4 +120,15 @@ internal static class UpgradeButton_UpdateBeastHandlerUI
     {
         return path < 3;
     }
+}
+
+/// <summary>
+/// Prevent PathPlusPlus mutators from ever being added to subtowers
+/// </summary>
+[HarmonyPatch(typeof(Tower), nameof(Tower.AddMutator))]
+internal static class Tower_AddMutator
+{
+    [HarmonyPrefix]
+    private static bool Prefix(Tower __instance, BehaviorMutator mutator) =>
+        !(__instance.towerModel.isSubTower && PathsPlusPlusMod.PathsById.ContainsKey(mutator.id));
 }
