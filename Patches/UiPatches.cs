@@ -9,6 +9,7 @@ using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity.Bridge;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 
 namespace PathsPlusPlus.Patches;
 
@@ -194,7 +195,9 @@ internal static class Tower_GetUpgrade
         {
             var tier = __instance.GetTier(thisPath.Id);
 
-            __result = tier < thisPath.UpgradeCount ? __instance.Sim.model.GetUpgrade(thisPath.Upgrades[0].Id) : null;
+            __result = tier < thisPath.UpgradeCount
+                ? __instance.Sim.model.GetUpgrade(thisPath.Upgrades[tier].Id)
+                : null;
             return false;
         }
 
@@ -220,13 +223,13 @@ internal class UpgradeObject_CheckBlockedPath
         var path = __instance.path;
         var pathPlusPlus = PathPlusPlus.GetPath(tower.towerModel.baseId, path);
         var max = pathPlusPlus?.UpgradeCount ?? 5;
-        
+
         if (!PathsPlusPlusMod.BalancedMode)
         {
             if (pathPlusPlus != null) __result = max;
             return;
         }
-        
+
         var tiers = tower.GetAllTiers();
         var thisTier = tiers[path];
 
@@ -256,7 +259,7 @@ internal static class TowerSelectionMenu_DisplayClass62_UpgradeTower
         var upgradeObject = menu.upgradeButtons[__instance.path];
 
         if (!upgradeObject.isActiveAndEnabled) return false;
-        
+
         if (!isUpgraded)
         {
             upgradeObject.tier = menu.selectedTower.tower.GetTier(__instance.path);
@@ -273,13 +276,25 @@ internal static class TowerSelectionMenu_DisplayClass62_UpgradeTower
 [HarmonyPatch(typeof(TowerManager), nameof(TowerManager.GetTowerUpgradeCost))]
 internal static class TowerManager_GetTowerUpgradeCost
 {
-    [HarmonyPostfix]
-    private static void Postfix(Tower tower, int path, int tier, float overrideBaseCost, ref float __result)
+    private static void Prefix(Tower tower, int path, int tier, ref Il2CppReferenceArray<UpgradePathModel>? __state)
     {
-        // TODO wtf??
-        if (path >= 3 && __result > 999999)
+        var towerModel = tower.towerModel;
+        if (path >= 3 && PathPlusPlus.TryGetPath(towerModel.baseId, path, out var pathPlusPlus))
         {
-            __result = overrideBaseCost;
+            __state = towerModel.upgrades;
+            towerModel.upgrades = new[]
+            {
+                new UpgradePathModel(pathPlusPlus.Upgrades[tier - 1].Id, towerModel.name)
+            };
+        }
+    }
+
+    [HarmonyPostfix]
+    private static void Postfix(Tower tower, int path, ref Il2CppReferenceArray<UpgradePathModel>? __state)
+    {
+        if (path >= 3 && __state != default)
+        {
+            tower.towerModel.upgrades = __state;
         }
     }
 }

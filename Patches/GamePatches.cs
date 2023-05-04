@@ -51,7 +51,7 @@ internal static class UnityToSimulation_UpgradeTower_Impl
         var towerManager = __instance.simulation.towerManager;
         var tower = towerManager.GetTowerById(id);
 
-        var cost = towerManager.GetTowerUpgradeCost(tower, pathIndex, current.tier, current.cost);
+        var cost = towerManager.GetTowerUpgradeCost(tower, pathIndex, current.tier + 1, current.cost);
 
         // Perform normal upgrade affects
         towerManager.UpgradeTower(inputId, tower, tower.rootModel.Cast<TowerModel>(), 0, cost);
