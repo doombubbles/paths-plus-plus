@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
 using Il2CppAssets.Scripts;
@@ -22,7 +23,7 @@ internal static class RateMutator_Mutate
     private static bool Prefix(RateSupport.RateSupportMutator __instance, Model model, ref bool __result)
     {
         if (!PathsPlusPlusMod.PathsById.TryGetValue(__instance.id, out var path)) return true;
-        
+
         var tower = model.Cast<TowerModel>();
         var tier = Convert.ToInt32(__instance.multiplier);
 
@@ -34,7 +35,7 @@ internal static class RateMutator_Mutate
 }
 
 /// <summary>
-/// Handle performing out custom upgrade action instead of standard behavior
+/// Handle performing our custom upgrade action instead of standard behavior
 /// </summary>
 [HarmonyPatch(typeof(UnityToSimulation), nameof(UnityToSimulation.UpgradeTower_Impl))]
 internal static class UnityToSimulation_UpgradeTower_Impl
@@ -66,6 +67,7 @@ internal static class UnityToSimulation_UpgradeTower_Impl
         }
 
         UpgradeButton.upgradeCashOffset = 0;
+        current = null;
 
         return false;
     }
@@ -80,5 +82,30 @@ internal static class TowerSelectionMenu_UpgradeTower
     {
         UnityToSimulation_UpgradeTower_Impl.current = upgrade;
         UnityToSimulation_UpgradeTower_Impl.cash = InGame.instance.GetCash();
+    }
+}
+
+/// <summary>
+/// If a path uses a TowerCreateTowerModel, don't let multiple towers spawn due to upgrading thet tower
+/// </summary>
+[HarmonyPatch(typeof(TowerCreateTower), nameof(TowerCreateTower.OnDestroy))]
+internal static class TowerCreateTower_OnDestroy
+{
+    [HarmonyPrefix]
+    private static void Prefix(TowerCreateTower __instance)
+    {
+        if (__instance.towerAdded && !__instance.tower.IsDestroyed)
+        {
+            var baseId = __instance.createTowerModel.towerModel.baseId;
+            var tower = __instance.Sim.towerManager
+                .GetChildTowers(__instance.tower)
+                .ToList()
+                .OrderBy(t => t.createdAt)
+                .FirstOrDefault(tower => tower.towerModel.baseId == baseId);
+            if (tower != null)
+            {
+                __instance.Sim.DestroyTower(tower, tower.owner);
+            }
+        }
     }
 }

@@ -62,6 +62,7 @@ public abstract class PathPlusPlus : ModContent
     /// <param name="tier">Up to and including this tier number</param>
     public void Apply(TowerModel tower, int tier)
     {
+        tower.tier = Math.Max(tower.tier, tier);
         for (var i = 0; i < tier; i++)
         {
             var upgrade = Upgrades[i];
@@ -72,8 +73,7 @@ public abstract class PathPlusPlus : ModContent
                 tower.portrait = upgrade.PortraitReference;
             }
 
-            tower.appliedUpgrades = tower.appliedUpgrades.AddTo(upgrade.Id); // TODO are there side effects from this?
-            tower.tier = Math.Max(tower.tier, tier); // TODO are there side effects from this?
+            tower.appliedUpgrades = tower.appliedUpgrades.AddTo(upgrade.Id);
         }
     }
 

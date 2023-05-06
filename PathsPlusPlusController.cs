@@ -1,4 +1,5 @@
 ﻿using System;
+using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
 using Il2CppAssets.Scripts.Unity.UI_New.Popups;
@@ -103,15 +104,18 @@ internal class PathsPlusPlusController : MonoBehaviour
         selectedTowerOptions.GetComponent<Mask>().enabled = hasMorePaths;
         selectedTowerOptions.GetComponent<Image>().enabled = hasMorePaths;
 
-        for (var i = 3; i < menu.upgradeInfoPopups.Count; i++)
+        TaskScheduler.ScheduleTask(() =>
         {
-            var infoContainer = menu.upgradeInfoPopups[i].transform.parent;
-            var pos = infoContainer.localPosition;
-            infoContainer.localPosition = pos with
+            for (var i = 3; i < menu.upgradeInfoPopups.Count; i++)
             {
-                x = Math.Abs(pos.x) * (menu.IsOpenedRight() ? 1 : -1)
-            };
-        }
+                var infoContainer = menu.upgradeInfoPopups[i].transform.parent;
+                var pos = infoContainer.localPosition;
+                infoContainer.localPosition = pos with
+                {
+                    x = Math.Abs(pos.x) * (menu.IsOpenedRight() ? 1 : -1)
+                };
+            }
+        });
     }
 
     private void AddNewUpgradeObject()
