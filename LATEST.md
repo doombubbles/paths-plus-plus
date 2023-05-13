@@ -1,1 +1,1 @@
-Initial Release
+- Fixed error message when selecting the Rare Quincy Action Figure

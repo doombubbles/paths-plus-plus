@@ -25,7 +25,7 @@ internal static class TowerSelectionMenu_Show
     [HarmonyPostfix]
     private static void Postfix(TowerSelectionMenu __instance)
     {
-        var controller = __instance.GetComponentInChildren<PathsPlusPlusController>();
+        var controller = __instance.GetComponentInChildren<PathsPlusPlusController>(true);
         if (controller == null)
         {
             controller = PathsPlusPlusController.Create(__instance);
@@ -39,7 +39,7 @@ internal static class TowerSelectionMenu_SelectTower
     [HarmonyPostfix]
     private static void Postfix(TowerSelectionMenu __instance, TowerToSimulation tower)
     {
-        var controller = __instance.GetComponentInChildren<PathsPlusPlusController>();
+        var controller = __instance.GetComponentInChildren<PathsPlusPlusController>(false);
         if (controller != null)
         {
             controller.SetMode(PathsPlusPlusMod.PathsByTower.ContainsKey(tower.Def.baseId));
