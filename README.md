@@ -13,7 +13,13 @@ Toggling off Balanced Mode can also function well with Ultimate Crosspathing, al
 
 ## Mods
 
-### [Tornado Wizards by doombubbles](https://github.com/doombubbles/tornado-wizards#readme)
+### [Jonyboylovespie's 4th Paths](https://github.com/Jonyboylovespie/4thPaths/releases/latest) (Mod Jam First Place)
+
+### [Hoo-Know's Tesla Coil Tack Shooter](https://github.com/Hoo-Knows/BTD6.TeslaCoil#readme) (Mod Jam Second Place)
+
+### [Fishythecrafter's Bomb Shooter Path](https://github.com/Fishythecrafter/BombShooterPath-/releases/latest) (Mod Jam Third Place)
+
+### [doombubbles' Tornado Wizards](https://github.com/doombubbles/tornado-wizards#readme) (Primary Example)
 
 ![Screenshot](Screenshot.png)
 
