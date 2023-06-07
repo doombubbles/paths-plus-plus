@@ -4,6 +4,7 @@ using System.Linq;
 using BTD_Mod_Helper;
 using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Models.Towers;
+using Il2CppAssets.Scripts.Models.Towers.Behaviors;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Simulation.Towers.Behaviors;
 
@@ -23,9 +24,9 @@ public static class PathPlusPlusExtensions
     public static int GetTier(this Tower tower, string pathId)
     {
         var mutatorById = tower.GetMutatorById(pathId);
-        if (mutatorById == null || !mutatorById.mutator.Is(out RateSupport.RateSupportMutator mutator)) return 0;
+        if (mutatorById == null || !mutatorById.mutator.Is(out RateSupportModel.RateSupportMutator mutator)) return 0;
 
-        return Convert.ToInt32(mutator.Cast<RateSupport.RateSupportMutator>().multiplier);
+        return Convert.ToInt32(mutator.Cast<RateSupportModel.RateSupportMutator>().multiplier);
     }
 
     /// <summary>
@@ -75,7 +76,7 @@ public static class PathPlusPlusExtensions
         }
 
         tower.RemoveMutatorsById(pathId);
-        tower.AddMutator(new RateSupport.RateSupportMutator(true, pathId, tier, path.Priority, null));
+        tower.AddMutator(new RateSupportModel.RateSupportMutator(true, pathId, tier, path.Priority, null));
     }
 
     /// <summary>

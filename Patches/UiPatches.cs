@@ -245,12 +245,12 @@ internal class UpgradeObject_CheckBlockedPath
     }
 }
 
-[HarmonyPatch(typeof(TowerSelectionMenu.__c__DisplayClass62_0),
-    nameof(TowerSelectionMenu.__c__DisplayClass62_0._UpgradeTower_b__0))]
+[HarmonyPatch(typeof(TowerSelectionMenu.__c__DisplayClass63_0),
+    nameof(TowerSelectionMenu.__c__DisplayClass63_0._UpgradeTower_b__0))]
 internal static class TowerSelectionMenu_DisplayClass62_UpgradeTower
 {
     [HarmonyPrefix]
-    private static bool Prefix(TowerSelectionMenu.__c__DisplayClass62_0 __instance, bool isUpgraded)
+    private static bool Prefix(TowerSelectionMenu.__c__DisplayClass63_0 __instance, bool isUpgraded)
     {
         if (__instance.path < 3) return true;
 
