@@ -12,7 +12,7 @@ internal class UpgradeObjectPlusPlus : MonoBehaviour
 {
     public UpgradeObject upgradeObject = null!;
 
-    public string pathId = null!;
+    public string? pathId;
 
     public bool getLowerUpgrade;
 
@@ -28,16 +28,21 @@ internal class UpgradeObjectPlusPlus : MonoBehaviour
 
         upgradeObject.path = pathPlusPlus.Path;
         upgradeObject.tts = tts;
-        upgradeObject.tier = tts.tower.GetTier(path);
         upgradeObject.upgradeButton.tts = tts;
+        upgradeObject.tier = tts.tower.GetTier(path);
 
         try
         {
-            upgradeObject.LoadUpgrades();
+            if (IsExtra)
+            {
+                upgradeObject.LoadUpgrades();
+            }
         }
         catch (Exception e)
         {
             ModHelper.Warning<PathsPlusPlusMod>(e);
         }
     }
+
+    public bool IsExtra => upgradeObject.path >= 3 || upgradeObject.tier >= 5;
 }

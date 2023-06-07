@@ -71,9 +71,22 @@ internal static class UpgradeObject_LoadUpgrades
     [HarmonyPrefix]
     private static void Prefix(UpgradeObject __instance)
     {
-        if (__instance.gameObject.HasComponent(out UpgradeObjectPlusPlus upgradeObjectPlusPlus))
+        if (__instance.gameObject.HasComponent(out UpgradeObjectPlusPlus upgradeObj) && upgradeObj.IsExtra)
         {
-            upgradeObjectPlusPlus.getLowerUpgrade = __instance.tier > 0;
+            upgradeObj.getLowerUpgrade = __instance.tier > 0;
+        }
+    }
+
+    [HarmonyPostfix]
+    private static void Postfix(UpgradeObject __instance)
+    {
+        if (__instance.gameObject.HasComponent<UpgradeObjectPlusPlus>() && __instance.tier >= 5)
+        {
+            var upgradeButton = __instance.upgradeButton;
+            var upgradeModel = __instance.GetUpgrade(null);
+
+            upgradeButton.SetUpgradeModel(upgradeModel);
+            upgradeButton.UpdateVisuals(__instance.path, false);
         }
     }
 }
@@ -89,17 +102,20 @@ internal static class UpgradeObject_GetUpgrade
     {
         try
         {
-            if (__instance.gameObject.HasComponent(out UpgradeObjectPlusPlus upgradeObjectPlusPlus))
+            if (__instance.gameObject.HasComponent(out UpgradeObjectPlusPlus upgradeObj) &&
+                upgradeObj.IsExtra &&
+                upgradeObj.GetPath() is PathPlusPlus path)
             {
-                var path = PathsPlusPlusMod.PathsById[upgradeObjectPlusPlus.pathId];
-                if (upgradeObjectPlusPlus.getLowerUpgrade)
+                if (upgradeObj.getLowerUpgrade)
                 {
-                    __result = InGame.Bridge.Model.GetUpgrade(path.Upgrades[Math.Max(0, __instance.tier - 1)].Id);
-                    upgradeObjectPlusPlus.getLowerUpgrade = false;
+                    upgradeObj.getLowerUpgrade = false;
+                    if (__instance is { path: < 3, tier: 5 }) return true;
+
+                    __result = InGame.Bridge.Model.GetUpgrade(path.Upgrades[Math.Max(0, __instance.tier - 1)]!.Id);
                 }
                 else if (__instance.tier < path.UpgradeCount)
                 {
-                    __result = InGame.Bridge.Model.GetUpgrade(path.Upgrades[__instance.tier].Id);
+                    __result = InGame.Bridge.Model.GetUpgrade(path.Upgrades[__instance.tier]!.Id);
                 }
                 else
                 {
@@ -191,13 +207,16 @@ internal static class Tower_GetUpgrade
     [HarmonyPrefix]
     private static bool Prefix(Tower __instance, int path, ref UpgradeModel? __result)
     {
-        if (path >= 3 && PathPlusPlus.TryGetPath(__instance.towerModel.baseId, path, out var thisPath))
+        if (PathPlusPlus.TryGetPath(__instance.towerModel.baseId, path, out var thisPath))
         {
             var tier = __instance.GetTier(thisPath.Id);
 
+            if (path < 3 && tier < 5) return true;
+
             __result = tier < thisPath.UpgradeCount
-                ? __instance.Sim.model.GetUpgrade(thisPath.Upgrades[tier].Id)
+                ? __instance.Sim.model.GetUpgrade(thisPath.Upgrades[tier]!.Id)
                 : null;
+            
             return false;
         }
 
@@ -273,28 +292,74 @@ internal static class TowerSelectionMenu_DisplayClass62_UpgradeTower
     }
 }
 
+/// <summary>
+/// Fix discounts and cost rounding for the upgrades
+/// </summary>
 [HarmonyPatch(typeof(TowerManager), nameof(TowerManager.GetTowerUpgradeCost))]
 internal static class TowerManager_GetTowerUpgradeCost
 {
     private static void Prefix(Tower tower, int path, int tier, ref Il2CppReferenceArray<UpgradePathModel>? __state)
     {
         var towerModel = tower.towerModel;
-        if (path >= 3 && PathPlusPlus.TryGetPath(towerModel.baseId, path, out var pathPlusPlus))
+        if ((tier > 5 || path >= 3) && PathPlusPlus.TryGetPath(towerModel.baseId, path, out var pathPlusPlus))
         {
             __state = towerModel.upgrades;
             towerModel.upgrades = new[]
             {
-                new UpgradePathModel(pathPlusPlus.Upgrades[tier - 1].Id, towerModel.name)
+                new UpgradePathModel(pathPlusPlus.Upgrades[tier - 1]!.Id, towerModel.name)
             };
         }
     }
 
     [HarmonyPostfix]
-    private static void Postfix(Tower tower, int path, ref Il2CppReferenceArray<UpgradePathModel>? __state)
+    private static void Postfix(Tower tower, ref Il2CppReferenceArray<UpgradePathModel>? __state)
     {
-        if (path >= 3 && __state != default)
+        if (__state != default)
         {
             tower.towerModel.upgrades = __state;
+        }
+    }
+}
+
+[HarmonyPatch(typeof(UpgradeObject), nameof(UpgradeObject.SetTier), typeof(int), typeof(int), typeof(int))]
+internal static class UpgradeObject_SetTier
+{
+    [HarmonyPrefix]
+    private static void Prefix(UpgradeObject __instance, ref int tier, ref int maxTier, ref int maxTierRestricted)
+    {
+        var tiers = __instance.tiers.ToList();
+        var baseTier = tiers[0]!;
+
+        var show = 5;
+
+        if (__instance.gameObject.HasComponent(out UpgradeObjectPlusPlus upgradePlusPlus))
+        {
+            show = upgradePlusPlus.GetPath()?.UpgradeCount ?? 5;
+
+            if (maxTier == 5) maxTier = Math.Max(5, show);
+            if (maxTierRestricted == 5) maxTierRestricted = Math.Max(5, show);
+        }
+
+        while (show > tiers.Count)
+        {
+            var newTier = baseTier.Duplicate(baseTier.transform.parent);
+            tiers.Add(newTier);
+            newTier.name = "Tier " + tiers.Count;
+        }
+
+        if (tiers.Count > __instance.tiers.Length)
+        {
+            __instance.tiers = tiers.ToArray();
+        }
+
+        for (var i = 0; i < show; i++)
+        {
+            tiers[i].gameObject.SetActive(true);
+        }
+
+        for (var i = show; i < tiers.Count; i++)
+        {
+            tiers[i].gameObject.SetActive(false);
         }
     }
 }

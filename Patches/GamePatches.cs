@@ -47,7 +47,7 @@ internal static class UnityToSimulation_UpgradeTower_Impl
     [HarmonyPrefix]
     private static bool Prefix(UnityToSimulation __instance, ObjectId id, int pathIndex, int callbackId, int inputId)
     {
-        if (pathIndex < 3 || current == null) return true;
+        if (current == null || !PathsPlusPlusMod.UpgradesById.ContainsKey(current.name)) return true;
 
         var action = __instance.UnregisterCallback(callbackId, inputId);
         var towerManager = __instance.simulation.towerManager;

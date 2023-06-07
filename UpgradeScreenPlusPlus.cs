@@ -86,23 +86,24 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
 
             for (var i = 0; i < pathPlusPlus.Upgrades.Length; i++)
             {
-                var upgradePlusPlus = pathPlusPlus.Upgrades[i];
-                var upgrade = upgradeDetails[i];
-                upgrade.gameObject.SetActive(true);
-
                 try
                 {
+                    var upgrade = upgradeDetails[i];
+                    upgrade.gameObject.SetActive(true);
+                    var upgradePlusPlus = pathPlusPlus.Upgrades[i];
+                    if (upgradePlusPlus == null) continue;
+                    
+                    
                     upgrade.SetUpgrade(towerId, upgradePlusPlus.GetUpgradeModel(),
                         new List<AbilityModel>().Cast<ICollection<AbilityModel>>(), pathPlusPlus.Path,
                         upgradePlusPlus.PortraitReference);
                     
+                    upgrade.abilityObject.SetActive(upgradePlusPlus.Ability);
                 }
                 catch (Exception e)
                 {
                     ModHelper.Warning<PathsPlusPlusMod>(e);
                 }
-
-                upgrade.abilityObject.SetActive(upgradePlusPlus.Ability);
             }
 
             for (var i = pathPlusPlus.Upgrades.Length; i < 5; i++)

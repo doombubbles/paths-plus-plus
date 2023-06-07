@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using BTD_Mod_Helper;
-using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Behaviors;
 using Il2CppAssets.Scripts.Simulation.Towers;
-using Il2CppAssets.Scripts.Simulation.Towers.Behaviors;
 
 namespace PathsPlusPlus;
 
@@ -21,13 +18,8 @@ public static class PathPlusPlusExtensions
     /// <param name="tower">The tower</param>
     /// <param name="pathId">The path id</param>
     /// <returns></returns>
-    public static int GetTier(this Tower tower, string pathId)
-    {
-        var mutatorById = tower.GetMutatorById(pathId);
-        if (mutatorById == null || !mutatorById.mutator.Is(out RateSupportModel.RateSupportMutator mutator)) return 0;
-
-        return Convert.ToInt32(mutator.Cast<RateSupportModel.RateSupportMutator>().multiplier);
-    }
+    public static int GetTier(this Tower tower, string pathId) =>
+        PathsPlusPlusMod.PathsById.TryGetValue(pathId, out var path) ? path.GetTier(tower) : 0;
 
     /// <summary>
     /// Gets what tier a tower is for a given path number
@@ -35,10 +27,9 @@ public static class PathPlusPlusExtensions
     /// <param name="tower">The tower</param>
     /// <param name="path">The path number, 0,1,2 for vanilla or 3+ for PathsPlusPlus</param>
     /// <returns></returns>
-    public static int GetTier(this Tower tower, int path) => path < 3
-        ? tower.towerModel.tiers[path]
-        : PathPlusPlus.TryGetPath(tower.towerModel.baseId, path, out var pathPlusPlus)
-            ? GetTier(tower, pathPlusPlus.Id)
+    public static int GetTier(this Tower tower, int path) =>
+        PathPlusPlus.TryGetPath(tower.towerModel.baseId, path, out var pathPlusPlus)
+            ? pathPlusPlus.GetTier(tower)
             : 0;
 
     /// <summary>
@@ -51,13 +42,19 @@ public static class PathPlusPlusExtensions
             ? paths.ToDictionary(path => path, path => tower.GetTier(path.Id))
             : new Dictionary<PathPlusPlus, int>();
 
+
+    private static int[] GetExtendedTiers(this Tower tower) =>
+        PathsPlusPlusMod.ExtendedPathsByTower.TryGetValue(tower.towerModel.baseId, out var paths)
+            ? paths.Select((path, i) => path?.GetTier(tower) ?? tower.towerModel.tiers[i]).ToArray()
+            : tower.towerModel.tiers;
+
     /// <summary>
     /// Gets all the tiers for this tower, both base and PathPlusPlus. List index corresponds to path number
     /// </summary>
     /// <param name="tower"></param>
     /// <returns>List of all tiers</returns>
     public static List<int> GetAllTiers(this Tower tower) =>
-        tower.towerModel.tiers.Concat(tower.GetTiers().Values).ToList();
+        tower.GetExtendedTiers().Concat(tower.GetTiers().Values).ToList();
 
 
     /// <summary>
@@ -75,8 +72,7 @@ public static class PathPlusPlusExtensions
             return;
         }
 
-        tower.RemoveMutatorsById(pathId);
-        tower.AddMutator(new RateSupportModel.RateSupportMutator(true, pathId, tier, path.Priority, null));
+        path.SetTier(tower, tier);
     }
 
     /// <summary>
@@ -90,7 +86,7 @@ public static class PathPlusPlusExtensions
     {
         if (PathPlusPlus.TryGetPath(tower.towerModel.baseId, path, out var pathPlusPlus))
         {
-            SetTier(tower, pathPlusPlus.Id, tier);
+            pathPlusPlus.SetTier(tower, tier);
         }
     }
 
@@ -106,13 +102,19 @@ public static class PathPlusPlusExtensions
         .Where(upgrade => upgrade?.Path.Tower == towerModel.baseId)
         .GroupBy(upgrade => upgrade!.Path)
         .ToDictionary(grouping => grouping.Key, grouping => grouping.DefaultIfEmpty().Max(plus => plus?.Tier ?? 0));
-    
-    
+
+
     /// <summary>
-    /// Gets all the tiers for this TowerModel, both base and PathPlusPlus. List index corresponds to path number
+    /// Gets all the tiers for this TowerModel, both base and PathPlusPlus.
     /// </summary>
     /// <param name="towerModel"></param>
     /// <returns>List of all tiers</returns>
     public static List<int> GetAllTiers(this TowerModel towerModel) =>
         towerModel.tiers.Concat(towerModel.GetTiers().Values).ToList();
+
+
+    internal static PathPlusPlus? GetPath(this UpgradeObjectPlusPlus upgradePlusPlus) =>
+        string.IsNullOrEmpty(upgradePlusPlus.pathId)
+            ? null
+            : PathsPlusPlusMod.PathsById.GetValueOrDefault(upgradePlusPlus.pathId, null!);
 }

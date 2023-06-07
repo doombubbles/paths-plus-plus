@@ -21,6 +21,7 @@ internal class PathsPlusPlusMod : BloonsTD6Mod
     public static readonly Dictionary<string, PathPlusPlus> PathsById = new();
     public static readonly Dictionary<string, List<PathPlusPlus>> PathsByTower = new();
     public static readonly Dictionary<string, UpgradePlusPlus> UpgradesById = new();
+    public static readonly Dictionary<string, PathPlusPlus?[]> ExtendedPathsByTower = new();
 
     public static readonly ModSettingBool BalancedMode = new(true)
     {

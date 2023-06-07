@@ -1,5 +1,6 @@
 ﻿using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
+using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Input;
 using Il2CppAssets.Scripts.Simulation.Objects;
 using Il2CppAssets.Scripts.Simulation.Towers;
@@ -16,8 +17,6 @@ internal static class TowerSelectionMenu_IsUpgradePathClosed
     {
         if (!PathsPlusPlusMod.BalancedMode)
         {
-            if (path < 3) return true;
-
             __result = false;
             return false;
         }
@@ -63,8 +62,6 @@ internal static class TowerToSimulation_GetMaxTierForPath
     [HarmonyPrefix]
     private static bool Prefix(TowerToSimulation __instance, int path, ref int __result)
     {
-        if (path < 3) return true;
-
         __result = PathPlusPlus.TryGetPath(__instance.Def.baseId, path, out var pathPlusPlus)
             ? pathPlusPlus.UpgradeCount
             : 5;
@@ -131,4 +128,20 @@ internal static class Tower_AddMutator
     [HarmonyPrefix]
     private static bool Prefix(Tower __instance, BehaviorMutator mutator) =>
         !(__instance.towerModel.isSubTower && PathsPlusPlusMod.PathsById.ContainsKey(mutator.id));
+}
+
+[HarmonyPatch(typeof(UpgradeModel), nameof(UpgradeModel.IsParagon), MethodType.Getter)]
+internal static class UpgradeModel_IsParagon
+{
+    [HarmonyPrefix]
+    private static bool Prefix(UpgradeModel __instance, ref bool __result)
+    {
+        if (PathsPlusPlusMod.UpgradesById.ContainsKey(__instance.name))
+        {
+            __result = false;
+            return false;
+        }
+
+        return true;
+    }
 }
