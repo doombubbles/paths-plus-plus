@@ -23,9 +23,17 @@ internal static class TowerSelectionMenu_IsUpgradePathClosed
 
         var tower = __instance.selectedTower.tower;
         var tiers = tower.GetAllTiers();
-        tiers[path]++;
 
-        __result = !PathsPlusPlusMod.ValidTiers(tiers);
+        if (PathPlusPlus.TryGetPath(tower.towerModel.baseId, path, out var pathPlusPlus))
+        {
+            tiers[path]++;
+            __result = !pathPlusPlus.ValidTiers(tiers.ToArray());
+        }
+        else
+        {
+            __result = !PathPlusPlus.DefaultValidTiers(tiers.ToArray());
+        }
+
         return false;
     }
 }

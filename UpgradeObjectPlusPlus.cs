@@ -44,5 +44,18 @@ internal class UpgradeObjectPlusPlus : MonoBehaviour
         }
     }
 
-    public bool IsExtra => upgradeObject.path >= 3 || upgradeObject.tier >= 5;
+    public bool IsExtra
+    {
+        get
+        {
+            if (upgradeObject.path >= 3) return true;
+
+            if (upgradeObject.tier < 5) return false;
+            
+            var tower = upgradeObject.towerSelectionMenu.selectedTower;
+            var hasExtraPath = PathPlusPlus.TryGetPath(tower.Def.baseId, upgradeObject.path, out _);
+
+            return hasExtraPath && !tower.CanUpgradeToParagon(true);
+        }
+    }
 }

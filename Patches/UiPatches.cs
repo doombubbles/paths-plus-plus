@@ -80,7 +80,9 @@ internal static class UpgradeObject_LoadUpgrades
     [HarmonyPostfix]
     private static void Postfix(UpgradeObject __instance)
     {
-        if (__instance.gameObject.HasComponent<UpgradeObjectPlusPlus>() && __instance.tier >= 5)
+        if (__instance.gameObject.HasComponent(out UpgradeObjectPlusPlus upgradeObj) &&
+            upgradeObj.IsExtra &&
+            __instance.tier >= 5)
         {
             var upgradeButton = __instance.upgradeButton;
             var upgradeModel = __instance.GetUpgrade(null);
@@ -216,7 +218,7 @@ internal static class Tower_GetUpgrade
             __result = tier < thisPath.UpgradeCount
                 ? __instance.Sim.model.GetUpgrade(thisPath.Upgrades[tier]!.Id)
                 : null;
-            
+
             return false;
         }
 
@@ -256,9 +258,19 @@ internal class UpgradeObject_CheckBlockedPath
         {
             __result = i;
             tiers[path] = i + 1;
-            if (!PathsPlusPlusMod.ValidTiers(tiers))
+            if (pathPlusPlus != null)
             {
-                return;
+                if (!pathPlusPlus.ValidTiers(tiers.ToArray()))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                if (!PathPlusPlus.DefaultValidTiers(tiers.ToArray()))
+                {
+                    return;
+                }
             }
         }
     }
@@ -301,7 +313,9 @@ internal static class TowerManager_GetTowerUpgradeCost
     private static void Prefix(Tower tower, int path, int tier, ref Il2CppReferenceArray<UpgradePathModel>? __state)
     {
         var towerModel = tower.towerModel;
-        if ((tier > 5 || path >= 3) && PathPlusPlus.TryGetPath(towerModel.baseId, path, out var pathPlusPlus))
+        if ((tier > 5 || path >= 3) &&
+            path >= 0 &&
+            PathPlusPlus.TryGetPath(towerModel.baseId, path, out var pathPlusPlus))
         {
             __state = towerModel.upgrades;
             towerModel.upgrades = new[]

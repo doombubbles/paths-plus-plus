@@ -58,8 +58,20 @@ public abstract class UpgradePlusPlus : NamedModContent
     /// </summary>
     public virtual SpriteReference PortraitReference => string.IsNullOrEmpty(Portrait)
         ? GetSpriteReferenceOrNull(Path.Name) ??
-          CreateSpriteReference(VanillaSprites.ByName.GetValueOrDefault(Path.Tower.Replace(TowerType.WizardMonkey, "Wizard") + "000"))
+          CreateSpriteReference(
+              VanillaSprites.ByName.GetValueOrDefault(Path.Tower.Replace(TowerType.WizardMonkey, "Wizard") + "000"))
         : GetSpriteReferenceOrDefault(Portrait);
+
+    /// <summary>
+    /// Override the texture to use for the container for the upgrade in the upgrades screen
+    /// </summary>
+    public virtual string? Container => null;
+
+    /// <summary>
+    /// Sprite reference for the container
+    /// </summary>
+    public virtual SpriteReference? ContainerReference =>
+        string.IsNullOrEmpty(Container) ? null : GetSpriteReferenceOrDefault(Container);
 
     private UpgradeModel? upgradeModel;
 

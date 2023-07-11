@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BTD_Mod_Helper;
 using BTD_Mod_Helper.Api;
+using BTD_Mod_Helper.Api.Towers;
 using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Behaviors;
@@ -45,17 +46,17 @@ public abstract class PathPlusPlus : ModContent
     /// <summary>
     /// Path ID for the Top path
     /// </summary>
-    protected const int Top = 0;
+    protected internal const int Top = 0;
 
     /// <summary>
     /// Path ID for the Middle path
     /// </summary>
-    protected const int Middle = 1;
+    protected internal const int Middle = 1;
 
     /// <summary>
     /// Path ID for the Bottom path
     /// </summary>
-    protected const int Bottom = 2;
+    protected internal const int Bottom = 2;
 
     private UpgradePlusPlus[]? upgrades;
 
@@ -68,6 +69,26 @@ public abstract class PathPlusPlus : ModContent
     /// Whether this path should appear in the Upgrades Screen for the tower
     /// </summary>
     public virtual bool ShowInMenu => true;
+
+    /// <summary>
+    /// Logic for whether an Upgrade++ should be allowed given the current tiers for a tower.
+    ///<br/>
+    /// By default, it will first check if <see cref="PathsPlusPlusMod.BalancedMode"/> is false and return false.
+    /// <br/>
+    /// Otherwise, will 
+    /// </summary>
+    /// <param name="tiers">List of all tiers for this tower, will be length 3+</param>
+    /// <returns>Whether to block the upgrade from happening</returns>
+    public virtual bool ValidTiers(int[] tiers) => DefaultValidTiers(tiers);
+
+    /// <summary>
+    /// Ensure that either Ultimate Crosspathing is being used, or that the tiers have at most 1 total path upgraded
+    /// past tier 2, and at most 2 total paths upgraded past tier 0.
+    /// </summary>
+    /// <param name="tiers"></param>
+    /// <returns></returns>
+    public static bool DefaultValidTiers(int[] tiers) =>
+        ModHelper.HasMod("UltimateCrosspathing") || tiers.Count(i => i > 2) <= 1 && tiers.Count(i => i > 0) <= 2;
 
     /// <inheritdoc />
     public override void Register()
@@ -136,7 +157,7 @@ public abstract class PathPlusPlus : ModContent
         return Convert.ToInt32(mutator.Cast<RateSupportModel.RateSupportMutator>().multiplier);
     }
 
-    
+
     /// <summary>
     /// Sets the tier for a given PathPlusPlus number to be a particular value.
     /// Will handle the mutation of the tower but not any upgrade side effects
@@ -148,7 +169,7 @@ public abstract class PathPlusPlus : ModContent
         tower.RemoveMutatorsById(Id);
         tower.AddMutator(new RateSupportModel.RateSupportMutator(true, Id, tier, Priority, null));
     }
-    
+
     /// <summary>
     /// Gets the PathPlusPlus for a given tower and path number, or null if not found
     /// </summary>
@@ -170,4 +191,14 @@ public abstract class PathPlusPlus : ModContent
     /// <returns>Whether one was found</returns>
     public static bool TryGetPath(string tower, int path, out PathPlusPlus pathPlusPlus) =>
         (pathPlusPlus = GetPath(tower, path)!) != null;
+}
+
+/// <summary>
+/// PathPlusPlus for a ModTower
+/// </summary>
+/// <typeparam name="T">The ModTower</typeparam>
+public abstract class PathPlusPlus<T> : PathPlusPlus where T : ModTower
+{
+    /// <inheritdoc />
+    public sealed override string Tower => GetInstance<T>().Id;
 }

@@ -19,7 +19,9 @@ namespace PathsPlusPlus;
 internal class UpgradeScreenPlusPlus : MonoBehaviour
 {
     private const int TopBarHeight = 345;
+    private const int LeftSideWidth = 1240;
     private const int PathsSpacing = 525;
+    private const int UpgradeSpacing = 490;
 
     public UpgradeScreen upgradeScreen = null!;
     public ModHelperScrollPanel scrollPanel = null!;
@@ -28,9 +30,19 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
 
     public readonly List<GameObject> createdUpgradePaths;
 
+    public readonly List<UpgradeDetails>[] extraUpgradeDetails;
+
+    private float paragonOffset;
+
     public UpgradeScreenPlusPlus(IntPtr ptr) : base(ptr)
     {
         createdUpgradePaths = new List<GameObject>();
+        extraUpgradeDetails = new List<UpgradeDetails>[]
+        {
+            new(),
+            new(),
+            new(),
+        };
     }
 
     public void UpdateUi(string towerId)
@@ -42,30 +54,48 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
             createdUpgradePath.gameObject.SetActive(false);
         }
 
+        foreach (var upgradeDetails in extraUpgradeDetails.SelectMany(list => list.ToArray()))
+        {
+            upgradeDetails.gameObject.SetActive(false);
+        }
+
         var paths = PathsPlusPlusMod.PathsByTower.TryGetValue(towerId, out var allPaths)
-            ? allPaths.Where(path => path.ShowInMenu).ToList()
+            ? allPaths.Where(path => path is { ShowInMenu: true }).ToList()
             : new System.Collections.Generic.List<PathPlusPlus>();
 
-        if (paths.Count == 0)
+        var extendedPaths = PathsPlusPlusMod.ExtendedPathsByTower.TryGetValue(towerId, out var morePaths)
+            ? morePaths.Where(path => path is { ShowInMenu: true }).ToList()!
+            : new System.Collections.Generic.List<PathPlusPlus>();
+
+
+        var paragonPanel = upgradeScreen.paragonPanel.transform;
+
+        if (paths.Count == 0 && extendedPaths.Count == 0)
         {
             scrollPanel.ScrollRect.enabled = false;
+            paragonPanel.localPosition = Vector3.zero;
+            paragonOffset = 0;
             return;
         }
 
         scrollPanel.ScrollRect.enabled = true;
-        var y = upgradePaths.localPosition.y;
-        var delta = 0f;
+        scrollPanel.ScrollRect.horizontal = extendedPaths.Any();
+        scrollPanel.ScrollRect.vertical = paths.Any();
+
+
+        var before = upgradePaths.localPosition;
+        var deltaY = 0f;
         for (var path = 0; path < paths.Count; path++)
         {
             var pathPlusPlus = paths[path];
-            delta += PathsSpacing;
+            deltaY += PathsSpacing;
 
             GameObject upgradePath;
             if (path >= createdUpgradePaths.Count)
             {
                 upgradePath = Instantiate(upgradeScreen.path3Container, upgradePaths);
                 upgradePath.name = $"Path {pathPlusPlus.Path + 1} Upgrades";
-                upgradePath.transform.TranslateScaled(new Vector3(0, -delta, 0));
+                upgradePath.transform.TranslateScaled(new Vector3(0, -deltaY, 0));
 
                 for (var i = 0; i < upgradePath.transform.childCount; i++)
                 {
@@ -88,16 +118,23 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
             {
                 try
                 {
+                    if (i >= upgradeDetails.Length)
+                    {
+                        var newUpgradeDetails = Instantiate(upgradeDetails[i - 1], upgradePath.transform);
+                        newUpgradeDetails.gameObject.name = "Upgrade(Clone)";
+                        upgradeDetails = upgradePath.GetComponentsInChildren<UpgradeDetails>();
+                    }
+
                     var upgrade = upgradeDetails[i];
                     upgrade.gameObject.SetActive(true);
                     var upgradePlusPlus = pathPlusPlus.Upgrades[i];
                     if (upgradePlusPlus == null) continue;
-                    
-                    
+
+
                     upgrade.SetUpgrade(towerId, upgradePlusPlus.GetUpgradeModel(),
                         new List<AbilityModel>().Cast<ICollection<AbilityModel>>(), pathPlusPlus.Path,
                         upgradePlusPlus.PortraitReference);
-                    
+
                     upgrade.abilityObject.SetActive(upgradePlusPlus.Ability);
                 }
                 catch (Exception e)
@@ -106,7 +143,7 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
                 }
             }
 
-            for (var i = pathPlusPlus.Upgrades.Length; i < 5; i++)
+            for (var i = pathPlusPlus.Upgrades.Length; i < upgradeDetails.Length; i++)
             {
                 upgradeDetails[i].gameObject.SetActive(false);
             }
@@ -115,8 +152,65 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
                 upgradeDetails.Take(pathPlusPlus.Upgrades.Length).ToIl2CppReferenceArray(), null);
         }
 
-        scrollContent.sizeDelta = scrollContent.sizeDelta with { y = delta };
-        upgradePaths.localPosition = upgradePaths.localPosition with { y = y };
+        var deltaX = 0f;
+        foreach (var extendedPath in extendedPaths)
+        {
+            var extraUpgrades = extraUpgradeDetails[extendedPath.ExtendVanillaPath];
+            var upgrades = extendedPath.ExtendVanillaPath switch
+            {
+                PathPlusPlus.Top => upgradeScreen.path1Upgrades,
+                PathPlusPlus.Middle => upgradeScreen.path3Upgrades,
+                PathPlusPlus.Bottom => upgradeScreen.path3Upgrades,
+                _ => throw new IndexOutOfRangeException()
+            };
+
+            var container = extendedPath.ExtendVanillaPath switch
+            {
+                PathPlusPlus.Top => upgradeScreen.path1Container,
+                PathPlusPlus.Middle => upgradeScreen.path2Container,
+                PathPlusPlus.Bottom => upgradeScreen.path3Container,
+                _ => throw new IndexOutOfRangeException()
+            };
+
+            foreach (var upgradePlusPlus in extendedPath.Upgrades.Where(upgrade => upgrade != null))
+            {
+                try
+                {
+                    var index = upgradePlusPlus!.Tier - 6;
+
+                    if (index >= extraUpgrades.Count)
+                    {
+                        var newUpgradeDetails = Instantiate(upgrades.Last(), container.transform);
+                        newUpgradeDetails.gameObject.name = "Upgrade(Clone)";
+                        extraUpgrades.Add(newUpgradeDetails);
+                    }
+
+                    var upgrade = extraUpgrades.Get(index);
+
+                    upgrade.gameObject.SetActive(true);
+
+                    upgrade.SetUpgrade(towerId, upgradePlusPlus.GetUpgradeModel(),
+                        new List<AbilityModel>().Cast<ICollection<AbilityModel>>(), extendedPath.ExtendVanillaPath,
+                        upgradePlusPlus.PortraitReference);
+
+                    upgrade.abilityObject.SetActive(upgradePlusPlus.Ability);
+                }
+                catch (Exception e)
+                {
+                    ModHelper.Warning<PathsPlusPlusMod>(e);
+                }
+            }
+
+            deltaX = Math.Max(deltaX, (extendedPath.UpgradeCount - 5) * UpgradeSpacing);
+
+            upgradeScreen.ResetUpgradeUnlocks(
+                extraUpgrades.Where(details => details.gameObject.active).ToIl2CppReferenceArray(), null);
+        }
+
+        paragonOffset = deltaX;
+
+        scrollContent.sizeDelta = new Vector2(deltaX, deltaY);
+        upgradePaths.localPosition = before;
     }
 
     public static UpgradeScreenPlusPlus Setup(UpgradeScreen upgradeScreen)
@@ -139,18 +233,26 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
             .Cast<RectTransform>();
         upgradePaths.SetParent(scrollPanel.ScrollContent.transform);
         upgradePaths.sizeDelta = Vector2.zero;
-        scrollContent.pivot = new Vector2(0.5f, 0.5f);
-        upgradePaths.localPosition = new Vector3(280, 0, 0);
-        scrollContent.pivot = new Vector2(0.5f, 1);
+        scrollContent.pivot = new Vector2(0, 1);
 
-        var y = upgradePaths.localPosition.y;
-        scrollPanel.RectTransform.pivot = new Vector2(0.5f, 0);
-        scrollPanel.RectTransform.sizeDelta = new Vector2(0, -TopBarHeight);
-        upgradePaths.localPosition = upgradePaths.localPosition with { y = y + TopBarHeight };
+        var before = upgradePaths.localPosition;
+        scrollPanel.RectTransform.pivot = new Vector2(1, 0);
+        scrollPanel.RectTransform.sizeDelta = new Vector2(-LeftSideWidth, -TopBarHeight);
+        upgradePaths.localPosition = before + new Vector3(-LeftSideWidth, TopBarHeight, 0);
 
         scrollPanel.transform.SetSiblingIndex(4);
 
         return upgradeScreenPlusPlus;
+    }
+
+    private void LateUpdate()
+    {
+        var paragonPanel = upgradeScreen.paragonPanel.transform.Cast<RectTransform>();
+
+        paragonPanel.anchoredPosition = paragonPanel.anchoredPosition with
+        {
+            x = scrollContent.anchoredPosition.x + paragonOffset
+        };
     }
 
     [HarmonyPatch(typeof(UpgradeScreen), nameof(UpgradeScreen.UpdateUi))]

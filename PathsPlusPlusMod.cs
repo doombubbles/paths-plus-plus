@@ -16,13 +16,34 @@ using UnityEngine;
 
 namespace PathsPlusPlus;
 
-internal class PathsPlusPlusMod : BloonsTD6Mod
+/// <summary>
+/// 
+/// </summary>
+public class PathsPlusPlusMod : BloonsTD6Mod
 {
+    /// <summary>
+    /// Map of ID to PathPlusPlus object
+    /// </summary>
     public static readonly Dictionary<string, PathPlusPlus> PathsById = new();
+    
+    /// <summary>
+    /// Map of Tower ID to list of all PathPlusPlus objects added
+    /// </summary>
     public static readonly Dictionary<string, List<PathPlusPlus>> PathsByTower = new();
+    
+    /// <summary>
+    /// Map of ID to UpgradePlusPlus object
+    /// </summary>
     public static readonly Dictionary<string, UpgradePlusPlus> UpgradesById = new();
+    
+    /// <summary>
+    /// Map of Tower ID to 3-length array of possibly null PathPlusPlus objects for extending vanilla paths
+    /// </summary>
     public static readonly Dictionary<string, PathPlusPlus?[]> ExtendedPathsByTower = new();
 
+    /// <summary>
+    /// ModSetting to restrict Paths++ upgrading like vanilla upgrading
+    /// </summary>
     public static readonly ModSettingBool BalancedMode = new(true)
     {
         description =
@@ -82,10 +103,8 @@ internal class PathsPlusPlusMod : BloonsTD6Mod
         {8, UpgradePath9},
     };
 
-    internal static bool ValidTiers(List<int> tiers) =>
-        ModHelper.HasMod("UltimateCrosspathing") || tiers.Count(i => i > 2) <= 1 && tiers.Count(i => i > 0) <= 2;
 
-
+    /// <inheritdoc />
     public override void OnTowerSaved(Tower tower, TowerSaveDataModel saveData)
     {
         foreach (var pathId in PathsById.Keys)
@@ -98,6 +117,7 @@ internal class PathsPlusPlusMod : BloonsTD6Mod
         }
     }
 
+    /// <inheritdoc />
     public override void OnTowerLoaded(Tower tower, TowerSaveDataModel saveData)
     {
         foreach (var pathId in PathsById.Keys)
@@ -109,6 +129,7 @@ internal class PathsPlusPlusMod : BloonsTD6Mod
         }
     }
 
+    /// <inheritdoc />
     public override void OnProfileLoaded(ProfileModel profile)
     {
         foreach (var upgrade in ModContent.GetContent<UpgradePlusPlus>())
@@ -117,11 +138,13 @@ internal class PathsPlusPlusMod : BloonsTD6Mod
         }
     }
 
+    /// <inheritdoc />
     public override void PreCleanProfile(ProfileModel profile)
     {
         var ids = ModContent.GetContent<UpgradePlusPlus>().Select(upgrade => upgrade.Id).ToArray();
         profile.acquiredUpgrades.RemoveWhere(new Func<string, bool>(s => ids.Contains(s)));
     }
 
+    /// <inheritdoc />
     public override void PostCleanProfile(ProfileModel profile) => OnProfileLoaded(profile);
 }

@@ -248,7 +248,6 @@ internal class PathsPlusPlusController : MonoBehaviour
         CheckCash();
     }
 
-
     public void CheckCash()
     {
         if (menu.selectedTower is not { hero: null, tower.towerModel.isParagon: false }) return;
