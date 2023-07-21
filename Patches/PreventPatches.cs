@@ -4,8 +4,10 @@ using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Input;
 using Il2CppAssets.Scripts.Simulation.Objects;
 using Il2CppAssets.Scripts.Simulation.Towers;
+using Il2CppAssets.Scripts.Simulation.Towers.Behaviors;
 using Il2CppAssets.Scripts.Unity.Bridge;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
+using Il2CppAssets.Scripts.Unity.UI_New.Upgrade;
 
 namespace PathsPlusPlus.Patches;
 
@@ -145,6 +147,32 @@ internal static class UpgradeModel_IsParagon
     private static bool Prefix(UpgradeModel __instance, ref bool __result)
     {
         if (PathsPlusPlusMod.UpgradesById.ContainsKey(__instance.name))
+        {
+            __result = false;
+            return false;
+        }
+
+        return true;
+    }
+}
+
+[HarmonyPatch(typeof(UpgradeObject), nameof(UpgradeObject.PostSimUpgrade))]
+internal static class UpgradeObject_PostSimUpgrade
+{
+    [HarmonyPrefix]
+    private static bool Prefix(UpgradeObject __instance)
+    {
+        return __instance.isActiveAndEnabled;
+    }
+}
+
+[HarmonyPatch(typeof(BeastHandlerUpgradeLock), nameof(BeastHandlerUpgradeLock.IsUpgradeBlocked))]
+internal static class BeastHandlerUpgradeLock_IsUpgradeBlocked
+{
+    [HarmonyPrefix]
+    private static bool Prefix(BeastHandlerUpgradeLock __instance, int path, ref bool __result)
+    {
+        if (path >= 3)
         {
             __result = false;
             return false;

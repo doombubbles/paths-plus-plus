@@ -117,7 +117,10 @@ public abstract class PathPlusPlus : ModContent
         }
     }
 
-    internal int Priority => Order - 100;
+    /// <summary>
+    /// The Priority given to the PathPlusPlus mutator on the tower
+    /// </summary>
+    protected virtual int Priority => -100 - Order;
 
     /// <summary>
     /// Applies all upgrades for this path up through the given tier on a TowerModel.
@@ -134,7 +137,7 @@ public abstract class PathPlusPlus : ModContent
 
             upgrade.ApplyUpgrade(tower);
             upgrade.ApplyUpgrade(tower, tier);
-            if (upgrade.IsHighestUpgrade(tower))
+            if (upgrade.IsHighestUpgrade(tower) && upgrade.PortraitReference is not null)
             {
                 tower.portrait = upgrade.PortraitReference;
             }
@@ -154,7 +157,7 @@ public abstract class PathPlusPlus : ModContent
         if (mutatorById == null || !mutatorById.mutator.Is(out RateSupportModel.RateSupportMutator mutator))
             return Path <= 2 ? tower.towerModel.tiers[Path] : 0;
 
-        return Convert.ToInt32(mutator.Cast<RateSupportModel.RateSupportMutator>().multiplier);
+        return Convert.ToInt32(mutator.multiplier);
     }
 
 

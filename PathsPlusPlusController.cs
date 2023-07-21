@@ -168,6 +168,14 @@ internal class PathsPlusPlusController : MonoBehaviour
 
     public void InitUpgradeButtons()
     {
+        foreach (var upgradeButton in menu.upgradeButtons)
+        {
+            if (upgradeButton.gameObject.HasComponent(out UpgradeObjectPlusPlus button))
+            {
+                button.pathId = null;
+            }    
+        }
+        
         if (menu.selectedTower is not { hero: null, tower.towerModel.isParagon: false } tower) return;
 
         if (!PathsPlusPlusMod.PathsByTower.TryGetValue(tower.Def.baseId, out var list))

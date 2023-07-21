@@ -5,7 +5,10 @@ using BTD_Mod_Helper;
 using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Api.ModOptions;
+using BTD_Mod_Helper.Extensions;
+using Il2CppAssets.Scripts.Models;
 using Il2CppAssets.Scripts.Models.Profile;
+using Il2CppAssets.Scripts.Models.TowerSets;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 using MelonLoader;
@@ -102,6 +105,31 @@ public class PathsPlusPlusMod : BloonsTD6Mod
         {7, UpgradePath8},
         {8, UpgradePath9},
     };
+
+    /// <inheritdoc />
+    public override void OnNewGameModel(GameModel gameModel)
+    {
+        foreach (var towerDetails in gameModel.towerSet.OfIl2CppType<ShopTowerDetailsModel>())
+        {
+            if (ExtendedPathsByTower.TryGetValue(towerDetails.towerId, out var paths))
+            {
+                if (towerDetails.pathOneMax == 5 && paths[0] != null)
+                {
+                    towerDetails.pathOneMax = paths[0]!.UpgradeCount;
+                }
+                
+                if (towerDetails.pathTwoMax == 5 && paths[1] != null)
+                {
+                    towerDetails.pathTwoMax = paths[1]!.UpgradeCount;
+                }
+                
+                if (towerDetails.pathThreeMax == 5 && paths[2] != null)
+                {
+                    towerDetails.pathThreeMax = paths[2]!.UpgradeCount;
+                }
+            }
+        }
+    }
 
 
     /// <inheritdoc />

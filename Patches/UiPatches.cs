@@ -50,6 +50,18 @@ internal static class TowerSelectionMenu_SelectTower
 [HarmonyPatch(typeof(TowerSelectionMenu), nameof(TowerSelectionMenu.InitUpgradeButtons))]
 internal static class TowerSelectionMenu_InitUpgradeButtons
 {
+    [HarmonyPrefix]
+    private static void Prefix(TowerSelectionMenu __instance)
+    {
+        foreach (var upgradeButton in __instance.upgradeButtons)
+        {
+            if (upgradeButton.gameObject.HasComponent(out UpgradeObjectPlusPlus button))
+            {
+                button.pathId = null;
+            }    
+        }
+    }
+    
     [HarmonyPostfix]
     private static void Postfix(TowerSelectionMenu __instance)
     {
@@ -245,7 +257,7 @@ internal class UpgradeObject_CheckBlockedPath
         var pathPlusPlus = PathPlusPlus.GetPath(tower.towerModel.baseId, path);
         var max = pathPlusPlus?.UpgradeCount ?? 5;
 
-        if (!PathsPlusPlusMod.BalancedMode)
+        if (!PathsPlusPlusMod.BalancedMode || path < 3 && ModHelper.HasMod("UltimateCrosspathing"))
         {
             if (pathPlusPlus != null) __result = max;
             return;
@@ -335,6 +347,7 @@ internal static class TowerManager_GetTowerUpgradeCost
     }
 }
 
+// Adding extra upgrade pips
 [HarmonyPatch(typeof(UpgradeObject), nameof(UpgradeObject.SetTier), typeof(int), typeof(int), typeof(int))]
 internal static class UpgradeObject_SetTier
 {

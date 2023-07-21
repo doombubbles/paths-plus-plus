@@ -56,10 +56,8 @@ public abstract class UpgradePlusPlus : NamedModContent
     /// <summary>
     /// Sprite reference for the portrait
     /// </summary>
-    public virtual SpriteReference PortraitReference => string.IsNullOrEmpty(Portrait)
-        ? GetSpriteReferenceOrNull(Path.Name) ??
-          CreateSpriteReference(
-              VanillaSprites.ByName.GetValueOrDefault(Path.Tower.Replace(TowerType.WizardMonkey, "Wizard") + "000"))
+    public virtual SpriteReference? PortraitReference => string.IsNullOrEmpty(Portrait)
+        ? GetSpriteReferenceOrNull(Path.Name)
         : GetSpriteReferenceOrDefault(Portrait);
 
     /// <summary>
@@ -74,6 +72,16 @@ public abstract class UpgradePlusPlus : NamedModContent
         string.IsNullOrEmpty(Container) ? null : GetSpriteReferenceOrDefault(Container);
 
     private UpgradeModel? upgradeModel;
+
+    /// <summary>
+    /// A Platinum version of the Tier 5 Upgrade Container
+    /// </summary>
+    protected static string UpgradeContainerPlatinum => GetTextureGUID<PathsPlusPlusMod>("UpgradeContainerPlatinum");
+
+    /// <summary>
+    /// A Diamond version of the Tier 5 Upgrade Container
+    /// </summary>
+    protected static string UpgradeContainerDiamond => GetTextureGUID<PathsPlusPlusMod>("UpgradeContainerDiamond");
 
     /// <inheritdoc />
     public override void Register()
