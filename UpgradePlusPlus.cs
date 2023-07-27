@@ -82,6 +82,11 @@ public abstract class UpgradePlusPlus : NamedModContent
     /// A Diamond version of the Tier 5 Upgrade Container
     /// </summary>
     protected static string UpgradeContainerDiamond => GetTextureGUID<PathsPlusPlusMod>("UpgradeContainerDiamond");
+    
+    /// <summary>
+    /// A Rainbow version of the Tier 5 Upgrade Container
+    /// </summary>
+    protected static string UpgradeContainerRainbow => GetTextureGUID<PathsPlusPlusMod>("UpgradeContainerRainbow");
 
     /// <inheritdoc />
     public override void Register()

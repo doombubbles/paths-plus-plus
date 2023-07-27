@@ -112,6 +112,24 @@ public class DartMonkeyFourthPath : PathPlusPlus
 
 Similarly to `ModTowers` from Mod Helper, your `UpgradeCount` should reflect how many upgrades you've actually made so far.
 
+### Extending a Vanilla Path
+
+If you are instead want to add additional upgrades to a vanilla path, create your `PathPlusPlus` with an override for the `ExtendsVanillaPath` property like so.
+
+```csharp
+public class DartMonkeyTopPath : PathPlusPlus
+{
+    public override string Tower => TowerType.DartMonkey;
+    
+    public override int ExtendVanillaPath => Top;
+
+    public override int UpgradeCount => 6; // Adding one new upgrade to bring the total upgrades up to 6
+}
+```
+
+In this case, you will be setting `UpgradeCount` to be the new maximum amount of upgrades that you want the path to go to.
+For example, setting it to 6 means that you are adding 1 additional upgrade sixth tier upgrade after the tower's 5 included tiers.
+
 
 ### Create your UpgradePlusPlus(s)
 
@@ -146,6 +164,10 @@ There are many familiar properties shared from `ModUpgrade` that all function ba
 If you do not specify a `Portrait`, the 000 tower portrait will be used.
 
 If your upgrade adds an ability to the tower, override the `Ability` property to be true.
+
+If you want to change the container background for your upgrade in the upgrade screen, you can override the `Container` property with a string GUID.
+Some standard options you may want are the default `VanillaSprites.UpgradeContainerBlue`, `VanillaSprites.UpgradeContainerTier5`, or `VanillaSprites.UpgradeContainerParagon`.
+Additionally, the `UpgradePlusPlus` class contains some some extra sprites that would be good options for Tier 6+ Upgrades including `UpgradeContainerPlatinum`, `UpgradeContainerDiamond` and `UpgradeContainerRainbow`.
 
 ### Upgrade effects
 
