@@ -181,3 +181,13 @@ internal static class BeastHandlerUpgradeLock_IsUpgradeBlocked
         return true;
     }
 }
+
+[HarmonyPatch(typeof(UpgradeDetails), nameof(UpgradeDetails.OnPointerExit))]
+internal static class UpgradeDetails_OnPointerExit
+{
+    [HarmonyPostfix]
+    private static void Postfix(UpgradeDetails __instance)
+    {
+
+    }
+}

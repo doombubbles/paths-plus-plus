@@ -150,6 +150,11 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
 
             upgradeScreen.ResetUpgradeUnlocks(
                 upgradeDetails.Take(pathPlusPlus.Upgrades.Length).ToIl2CppReferenceArray(), null);
+            
+            foreach (var upgradeDetail in upgradeDetails)
+            {
+                upgradeDetail.SetUpgradeScreen(upgradeScreen);
+            }
         }
 
         var deltaX = 0f;
@@ -199,6 +204,11 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
 
             upgradeScreen.ResetUpgradeUnlocks(
                 extraUpgrades.Where(details => details.gameObject.active).ToIl2CppReferenceArray(), null);
+            
+            foreach (var upgradeDetails in extraUpgrades)
+            {
+                upgradeDetails.SetUpgradeScreen(upgradeScreen);
+            }
         }
 
         paragonOffset = deltaX;
@@ -296,7 +306,6 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
         {
             foreach (var upgradeDetails in __instance.GetComponentsInChildren<UpgradeDetails>())
             {
-                upgradeDetails.SetUpgradeScreen(__instance);
                 if (upgradeDetails.gameObject.HasComponent(out Animator animator))
                 {
                     animator.speed = .75f;
