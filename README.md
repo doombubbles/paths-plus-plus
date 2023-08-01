@@ -121,7 +121,7 @@ public class DartMonkeyTopPath : PathPlusPlus
 {
     public override string Tower => TowerType.DartMonkey;
     
-    public override int ExtendVanillaPath => Tops;
+    public override int ExtendVanillaPath => Top;
 
     public override int UpgradeCount => 6; // Adding one new upgrade to bring the total upgrades up to 6
 }
