@@ -47,7 +47,7 @@ internal class PathsPlusPlusController : MonoBehaviour
         {
             return null;
         }
-        
+
         var controller = selectedTowerOptions.AddComponent<PathsPlusPlusController>();
         controller.menu = menu;
         controller.moreUpgradeButtons = new List<UpgradeObjectPlusPlus>();
@@ -66,12 +66,7 @@ internal class PathsPlusPlusController : MonoBehaviour
 
         foreach (var menuUpgradeButton in menu.upgradeButtons)
         {
-            var layoutElement = menuUpgradeButton.gameObject.AddComponent<LayoutElement>();
-            var size = menuUpgradeButton.transform.Cast<RectTransform>().sizeDelta;
-            layoutElement.preferredWidth = layoutElement.minWidth = size.x;
-            layoutElement.preferredHeight = layoutElement.minHeight = size.y;
-
-            menuUpgradeButton.locked.transform.Cast<RectTransform>().sizeDelta = new Vector2(900, 350);
+            ModifyDefaultUpgradeObject(menuUpgradeButton);
         }
 
         var verticalLayoutGroup = towerDetails.AddComponent<VerticalLayoutGroup>();
@@ -124,7 +119,7 @@ internal class PathsPlusPlusController : MonoBehaviour
         var row = 3 + moreUpgradeButtons.Count;
         var newUpgrade = upgradeObject.gameObject.Duplicate(menu.towerDetails.transform);
 
-        var upgradeObjectPlusPlus = newUpgrade.AddComponent<UpgradeObjectPlusPlus>();
+        var upgradeObjectPlusPlus = newUpgrade.GetComponent<UpgradeObjectPlusPlus>();
 
         upgradeObjectPlusPlus.upgradeObject = newUpgrade.GetComponent<UpgradeObject>();
         newUpgrade.name = "UpgradeObject_" + (row + 1);
@@ -147,8 +142,40 @@ internal class PathsPlusPlusController : MonoBehaviour
         scrollRect.verticalNormalizedPosition = 1;
     }
 
+    private static void ModifyDefaultUpgradeObject(UpgradeObject upgradeObject)
+    {
+        // Slightly adjust size
+        var layoutElement = upgradeObject.gameObject.AddComponent<LayoutElement>();
+        var size = upgradeObject.transform.Cast<RectTransform>().sizeDelta;
+        layoutElement.preferredWidth = layoutElement.minWidth = size.x;
+        layoutElement.preferredHeight = layoutElement.minHeight = size.y;
+        upgradeObject.locked.transform.Cast<RectTransform>().sizeDelta = new Vector2(900, 350);
+
+        // Allow any number of tiers
+        var tierIndicators = upgradeObject.tiers[0].transform.parent;
+        tierIndicators.TranslateScaled(new Vector3(13, 0, 0));
+        var grid = tierIndicators.GetComponent<GridLayoutGroup>();
+        grid.constraint = GridLayoutGroup.Constraint.FixedRowCount;
+        grid.constraintCount = 5;
+        grid.startAxis = GridLayoutGroup.Axis.Vertical;
+        grid.childAlignment = TextAnchor.LowerLeft;
+        grid.spacing = new Vector2(4, 4);
+        
+        // Add custom component
+        var upgradeObjectPlusPlus = upgradeObject.gameObject.AddComponent<UpgradeObjectPlusPlus>();
+        upgradeObjectPlusPlus.upgradeObject = upgradeObject;
+    }
+
     public void InitUpgradeButtons()
     {
+        foreach (var upgradeButton in menu.upgradeButtons)
+        {
+            if (upgradeButton.gameObject.HasComponent(out UpgradeObjectPlusPlus button))
+            {
+                button.pathId = null;
+            }    
+        }
+        
         if (menu.selectedTower is not { hero: null, tower.towerModel.isParagon: false } tower) return;
 
         if (!PathsPlusPlusMod.PathsByTower.TryGetValue(tower.Def.baseId, out var list))
@@ -159,6 +186,27 @@ internal class PathsPlusPlusController : MonoBehaviour
             AddNewUpgradeObject();
         }
 
+        if (PathsPlusPlusMod.ExtendedPathsByTower.TryGetValue(tower.Def.baseId, out var array))
+        {
+            for (var p = 0; p < array.Length; p++)
+            {
+                var upgradeButton = menu.upgradeButtons[p];
+                var button = upgradeButton.GetComponent<UpgradeObjectPlusPlus>();
+                if (button == null || !button.isActiveAndEnabled) continue;
+                
+                var path = array[p];
+                if (path == null)
+                {
+                    button.pathId = null;
+                }
+                else
+                {
+                    button.InitForTower(tower, path.Id);
+                    upgradeButton.UpdateVisuals(path.Path, false);
+                }
+            }
+        }
+        
         for (var i = 0; i < moreUpgradeButtons.Count; i++)
         {
             var button = moreUpgradeButtons.Get(i);
@@ -207,7 +255,6 @@ internal class PathsPlusPlusController : MonoBehaviour
 
         CheckCash();
     }
-
 
     public void CheckCash()
     {

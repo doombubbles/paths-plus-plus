@@ -1,1 +1,2 @@
-- Fixed for BTD6 v38.1
+- Fixed for BTD6 v39.0
+- Added functionality for creating additional tiers for tower upgrade paths, see updated readme for more details

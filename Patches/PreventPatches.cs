@@ -1,10 +1,13 @@
 ﻿using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
+using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Input;
 using Il2CppAssets.Scripts.Simulation.Objects;
 using Il2CppAssets.Scripts.Simulation.Towers;
+using Il2CppAssets.Scripts.Simulation.Towers.Behaviors;
 using Il2CppAssets.Scripts.Unity.Bridge;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
+using Il2CppAssets.Scripts.Unity.UI_New.Upgrade;
 
 namespace PathsPlusPlus.Patches;
 
@@ -16,17 +19,23 @@ internal static class TowerSelectionMenu_IsUpgradePathClosed
     {
         if (!PathsPlusPlusMod.BalancedMode)
         {
-            if (path < 3) return true;
-
             __result = false;
             return false;
         }
 
         var tower = __instance.selectedTower.tower;
         var tiers = tower.GetAllTiers();
-        tiers[path]++;
 
-        __result = !PathsPlusPlusMod.ValidTiers(tiers);
+        if (PathPlusPlus.TryGetPath(tower.towerModel.baseId, path, out var pathPlusPlus))
+        {
+            tiers[path]++;
+            __result = !pathPlusPlus.ValidTiers(tiers.ToArray());
+        }
+        else
+        {
+            __result = !PathPlusPlus.DefaultValidTiers(tiers.ToArray());
+        }
+
         return false;
     }
 }
@@ -63,8 +72,6 @@ internal static class TowerToSimulation_GetMaxTierForPath
     [HarmonyPrefix]
     private static bool Prefix(TowerToSimulation __instance, int path, ref int __result)
     {
-        if (path < 3) return true;
-
         __result = PathPlusPlus.TryGetPath(__instance.Def.baseId, path, out var pathPlusPlus)
             ? pathPlusPlus.UpgradeCount
             : 5;
@@ -131,4 +138,56 @@ internal static class Tower_AddMutator
     [HarmonyPrefix]
     private static bool Prefix(Tower __instance, BehaviorMutator mutator) =>
         !(__instance.towerModel.isSubTower && PathsPlusPlusMod.PathsById.ContainsKey(mutator.id));
+}
+
+[HarmonyPatch(typeof(UpgradeModel), nameof(UpgradeModel.IsParagon), MethodType.Getter)]
+internal static class UpgradeModel_IsParagon
+{
+    [HarmonyPrefix]
+    private static bool Prefix(UpgradeModel __instance, ref bool __result)
+    {
+        if (PathsPlusPlusMod.UpgradesById.ContainsKey(__instance.name))
+        {
+            __result = false;
+            return false;
+        }
+
+        return true;
+    }
+}
+
+[HarmonyPatch(typeof(UpgradeObject), nameof(UpgradeObject.PostSimUpgrade))]
+internal static class UpgradeObject_PostSimUpgrade
+{
+    [HarmonyPrefix]
+    private static bool Prefix(UpgradeObject __instance)
+    {
+        return __instance.isActiveAndEnabled;
+    }
+}
+
+[HarmonyPatch(typeof(BeastHandlerUpgradeLock), nameof(BeastHandlerUpgradeLock.IsUpgradeBlocked))]
+internal static class BeastHandlerUpgradeLock_IsUpgradeBlocked
+{
+    [HarmonyPrefix]
+    private static bool Prefix(BeastHandlerUpgradeLock __instance, int path, ref bool __result)
+    {
+        if (path >= 3)
+        {
+            __result = false;
+            return false;
+        }
+
+        return true;
+    }
+}
+
+[HarmonyPatch(typeof(UpgradeDetails), nameof(UpgradeDetails.OnPointerExit))]
+internal static class UpgradeDetails_OnPointerExit
+{
+    [HarmonyPostfix]
+    private static void Postfix(UpgradeDetails __instance)
+    {
+
+    }
 }

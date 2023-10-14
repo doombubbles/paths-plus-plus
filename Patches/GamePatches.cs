@@ -47,7 +47,7 @@ internal static class UnityToSimulation_UpgradeTower_Impl
     [HarmonyPrefix]
     private static bool Prefix(UnityToSimulation __instance, ObjectId id, int pathIndex, int callbackId, int inputId)
     {
-        if (pathIndex < 3 || current == null) return true;
+        if (current == null || !PathsPlusPlusMod.UpgradesById.ContainsKey(current.name)) return true;
 
         var action = __instance.UnregisterCallback(callbackId, inputId);
         var towerManager = __instance.simulation.towerManager;
@@ -75,7 +75,7 @@ internal static class UnityToSimulation_UpgradeTower_Impl
 }
 
 [HarmonyPatch(typeof(TowerSelectionMenu), nameof(TowerSelectionMenu.UpgradeTower), typeof(UpgradeModel), typeof(int),
-    typeof(float))]
+    typeof(float), typeof(double))]
 internal static class TowerSelectionMenu_UpgradeTower
 {
     [HarmonyPrefix]
@@ -83,30 +83,5 @@ internal static class TowerSelectionMenu_UpgradeTower
     {
         UnityToSimulation_UpgradeTower_Impl.current = upgrade;
         UnityToSimulation_UpgradeTower_Impl.cash = InGame.instance.GetCash();
-    }
-}
-
-/// <summary>
-/// If a path uses a TowerCreateTowerModel, don't let multiple towers spawn due to upgrading thet tower
-/// </summary>
-[HarmonyPatch(typeof(TowerCreateTower), nameof(TowerCreateTower.OnDestroy))]
-internal static class TowerCreateTower_OnDestroy
-{
-    [HarmonyPrefix]
-    private static void Prefix(TowerCreateTower __instance)
-    {
-        if (__instance.towerAdded && !__instance.tower.IsDestroyed)
-        {
-            var baseId = __instance.createTowerModel.towerModel.baseId;
-            var tower = __instance.Sim.towerManager
-                .GetChildTowers(__instance.tower)
-                .ToList()
-                .OrderBy(t => t.createdAt)
-                .FirstOrDefault(tower => tower.towerModel.baseId == baseId);
-            if (tower != null)
-            {
-                __instance.Sim.DestroyTower(tower, tower.owner);
-            }
-        }
     }
 }
