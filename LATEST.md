@@ -1,1 +1,3 @@
 - Fix custom upgrade containers not appearing for tier 5+ upgrades on towers with paragons
+- When Paths++ and Paragon upgrades overlap for a tower, you can right click on the upgrade to swap which one is showing
+  - The "Paragon Overlap Default" setting controls which is the one it starts off as showing, with Paths++ being the default

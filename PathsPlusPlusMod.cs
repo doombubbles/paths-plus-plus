@@ -28,17 +28,17 @@ public class PathsPlusPlusMod : BloonsTD6Mod
     /// Map of ID to PathPlusPlus object
     /// </summary>
     public static readonly Dictionary<string, PathPlusPlus> PathsById = new();
-    
+
     /// <summary>
     /// Map of Tower ID to list of all PathPlusPlus objects added
     /// </summary>
     public static readonly Dictionary<string, List<PathPlusPlus>> PathsByTower = new();
-    
+
     /// <summary>
     /// Map of ID to UpgradePlusPlus object
     /// </summary>
     public static readonly Dictionary<string, UpgradePlusPlus> UpgradesById = new();
-    
+
     /// <summary>
     /// Map of Tower ID to 3-length array of possibly null PathPlusPlus objects for extending vanilla paths
     /// </summary>
@@ -56,6 +56,22 @@ public class PathsPlusPlusMod : BloonsTD6Mod
         button = true,
         enabledText = "On",
         disabledText = "Off"
+    };
+
+    /// <summary>
+    /// ModSetting to affect default Paragon Upgrade overriding behavior
+    /// </summary>
+    public static readonly ModSettingBool ParagonOverlapDefault = new(true)
+    {
+        description =
+            "When a Paragon Upgrade and a Paths++ upgrade on a tower overlap, changes which one is showed by default. " +
+            "You'll always be able to right click the upgrade to toggle which is currently showing.",
+        icon = VanillaSprites.UpgradeContainerParagonUnlocked,
+        button = true,
+        enabledText = "Paths++",
+        enabledButton = VanillaSprites.BlueBtnLong,
+        disabledText = "Paragon",
+        disabledButton = VanillaSprites.ParagonBtnLong
     };
 
     internal static readonly ModSettingCategory Hotkeys = new("Hotkeys");
@@ -98,13 +114,17 @@ public class PathsPlusPlusMod : BloonsTD6Mod
 
     internal static readonly Dictionary<int, ModSettingHotkey> HotKeysByPath = new()
     {
-        {3, UpgradePath4},
-        {4, UpgradePath5},
-        {5, UpgradePath6},
-        {6, UpgradePath7},
-        {7, UpgradePath8},
-        {8, UpgradePath9},
+        { 3, UpgradePath4 },
+        { 4, UpgradePath5 },
+        { 5, UpgradePath6 },
+        { 6, UpgradePath7 },
+        { 7, UpgradePath8 },
+        { 8, UpgradePath9 },
     };
+
+    public override void OnUpdate()
+    {
+    }
 
     /// <inheritdoc />
     public override void OnNewGameModel(GameModel gameModel)
@@ -117,12 +137,12 @@ public class PathsPlusPlusMod : BloonsTD6Mod
                 {
                     towerDetails.pathOneMax = paths[0]!.UpgradeCount;
                 }
-                
+
                 if (towerDetails.pathTwoMax == 5 && paths[1] != null)
                 {
                     towerDetails.pathTwoMax = paths[1]!.UpgradeCount;
                 }
-                
+
                 if (towerDetails.pathThreeMax == 5 && paths[2] != null)
                 {
                     towerDetails.pathThreeMax = paths[2]!.UpgradeCount;

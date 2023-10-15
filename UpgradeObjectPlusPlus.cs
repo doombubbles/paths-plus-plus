@@ -16,6 +16,8 @@ internal class UpgradeObjectPlusPlus : MonoBehaviour
 
     public bool getLowerUpgrade;
 
+    public bool overrideParagon = PathsPlusPlusMod.ParagonOverlapDefault;
+
     public UpgradeObjectPlusPlus(IntPtr ptr) : base(ptr)
     {
     }
@@ -51,11 +53,11 @@ internal class UpgradeObjectPlusPlus : MonoBehaviour
             if (upgradeObject.path >= 3) return true;
 
             if (upgradeObject.tier < 5) return false;
-            
+
             var tower = upgradeObject.towerSelectionMenu.selectedTower;
             var hasExtraPath = PathPlusPlus.TryGetPath(tower.Def.baseId, upgradeObject.path, out _);
 
-            return hasExtraPath && !tower.CanUpgradeToParagon(true);
+            return hasExtraPath && overrideParagon || !tower.CanUpgradeToParagon(true);
         }
     }
 }
