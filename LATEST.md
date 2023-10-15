@@ -1,2 +1,1 @@
-- Fixed for BTD6 v39.0
-- Added functionality for creating additional tiers for tower upgrade paths, see updated readme for more details
+- Fix custom upgrade containers not appearing for tier 5+ upgrades on towers with paragons

@@ -236,7 +236,7 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
         upgrade.theme = theme.MemberwiseClone().Cast<UpgradeDetails.UpgradeDetailsTheme>();
         if (upgradePlusPlus.ContainerReference is not null)
         {
-            upgrade.theme.owned = upgradePlusPlus.ContainerReference;
+            upgrade.theme.owned = upgrade.theme.paragonPurchased = upgradePlusPlus.ContainerReference;
         }
     }
 
