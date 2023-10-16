@@ -1,5 +1,4 @@
-﻿using BTD_Mod_Helper.Extensions;
-using HarmonyLib;
+﻿using HarmonyLib;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Input;
 using Il2CppAssets.Scripts.Simulation.Objects;
@@ -25,18 +24,22 @@ internal static class TowerSelectionMenu_IsUpgradePathClosed
 
         var tower = __instance.selectedTower.tower;
         var tiers = tower.GetAllTiers();
+        var towerId = tower.towerModel.baseId;
 
         if (PathPlusPlus.TryGetPath(tower.towerModel.baseId, path, out var pathPlusPlus))
         {
             tiers[path]++;
             __result = !pathPlusPlus.ValidTiers(tiers.ToArray());
-        }
-        else
-        {
-            __result = !PathPlusPlus.DefaultValidTiers(tiers.ToArray());
+            return false;
         }
 
-        return false;
+        if (PathsPlusPlusMod.PathsByTower.ContainsKey(towerId))
+        {
+            __result = !PathPlusPlus.DefaultValidTiers(tiers.ToArray());
+            return false;
+        }
+
+        return true;
     }
 }
 
@@ -188,6 +191,5 @@ internal static class UpgradeDetails_OnPointerExit
     [HarmonyPostfix]
     private static void Postfix(UpgradeDetails __instance)
     {
-
     }
 }

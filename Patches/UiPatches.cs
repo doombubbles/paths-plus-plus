@@ -247,22 +247,25 @@ internal static class Tower_GetUpgrade
 internal class UpgradeObject_CheckBlockedPath
 {
     [HarmonyPrefix]
-    private static bool Prefix(UpgradeObject __instance) => __instance.isActiveAndEnabled;
-
-    [HarmonyPostfix]
-    internal static void Postfix(UpgradeObject __instance, ref int __result)
+    private static bool Prefix(UpgradeObject __instance, ref int __result)
     {
-        if (!__instance.isActiveAndEnabled) return;
+        if (!__instance.isActiveAndEnabled) return false;
 
         var tower = __instance.towerSelectionMenu.selectedTower.tower;
         var path = __instance.path;
         var pathPlusPlus = PathPlusPlus.GetPath(tower.towerModel.baseId, path);
         var max = pathPlusPlus?.UpgradeCount ?? 5;
-
-        if (!PathsPlusPlusMod.BalancedMode || path < 3 && ModHelper.HasMod("UltimateCrosspathing"))
+        
+        if (!PathsPlusPlusMod.BalancedMode && pathPlusPlus != null)
         {
-            if (pathPlusPlus != null) __result = max;
-            return;
+            __result = max;
+            return false;
+        }
+
+        if (pathPlusPlus == null &&
+            (!PathsPlusPlusMod.BalancedMode || path < 3 && ModHelper.HasMod("UltimateCrosspathing")))
+        {
+            return true;
         }
 
         var tiers = tower.GetAllTiers();
@@ -274,19 +277,15 @@ internal class UpgradeObject_CheckBlockedPath
             tiers[path] = i + 1;
             if (pathPlusPlus != null)
             {
-                if (!pathPlusPlus.ValidTiers(tiers.ToArray()))
-                {
-                    return;
-                }
+                if (!pathPlusPlus.ValidTiers(tiers.ToArray())) break;
             }
             else
             {
-                if (!PathPlusPlus.DefaultValidTiers(tiers.ToArray()))
-                {
-                    return;
-                }
+                if (!PathPlusPlus.DefaultValidTiers(tiers.ToArray())) break;
             }
         }
+
+        return false;
     }
 }
 
