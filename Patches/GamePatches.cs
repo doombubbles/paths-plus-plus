@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
 using Il2CppAssets.Scripts;
@@ -7,7 +6,6 @@ using Il2CppAssets.Scripts.Models;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Behaviors;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
-using Il2CppAssets.Scripts.Simulation.Towers.Behaviors;
 using Il2CppAssets.Scripts.Unity.Bridge;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
@@ -60,7 +58,7 @@ internal static class UnityToSimulation_UpgradeTower_Impl
         InGame.instance.SetCash(cash - cost);
 
         // Apply the upgrade
-        tower.SetTier(pathIndex, current.tier + 1);
+        tower.SetTier(pathIndex, current.tier + 1, true);
 
         if (action != null)
         {

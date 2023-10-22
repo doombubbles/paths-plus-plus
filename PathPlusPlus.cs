@@ -8,7 +8,6 @@ using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Behaviors;
 using Il2CppAssets.Scripts.Simulation.Towers;
-using Il2CppAssets.Scripts.Simulation.Towers.Behaviors;
 
 namespace PathsPlusPlus;
 
@@ -118,6 +117,15 @@ public abstract class PathPlusPlus : ModContent
     }
 
     /// <summary>
+    /// Runs in game when one of the Upgrades of this path is first applied to a tower
+    /// </summary>
+    /// <param name="tower">The tower receiving the upgrade</param>
+    /// <param name="tier">The tier of the upgrade</param>
+    public virtual void OnUpgraded(Tower tower, int tier)
+    {
+    }
+
+    /// <summary>
     /// The Priority given to the PathPlusPlus mutator on the tower
     /// </summary>
     protected virtual int Priority => -100 - Order;
@@ -167,10 +175,20 @@ public abstract class PathPlusPlus : ModContent
     /// </summary>
     /// <param name="tower">The tower</param>
     /// <param name="tier">The new desired tier</param>
-    public void SetTier(Tower tower, int tier)
+    /// <param name="onUpgrade">Whether to perform OnUpgrade effects</param>
+    public void SetTier(Tower tower, int tier, bool onUpgrade = false)
     {
         tower.RemoveMutatorsById(Id);
         tower.AddMutator(new RateSupportModel.RateSupportMutator(true, Id, tier, Priority, null));
+        if (onUpgrade && Upgrades[tier - 1] is UpgradePlusPlus upgrade)
+        {
+            OnUpgraded(tower, tier);
+            upgrade.OnUpgraded(tower);
+            if (mod is BloonsTD6Mod btd6Mod)
+            {
+                btd6Mod.OnTowerUpgraded(tower, upgrade.Name, tower.rootModel.Cast<TowerModel>());
+            }
+        }
     }
 
     /// <summary>

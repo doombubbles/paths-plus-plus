@@ -1,10 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using BTD_Mod_Helper.Api;
-using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
+using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity;
 using Il2CppAssets.Scripts.Utils;
 
@@ -71,6 +70,21 @@ public abstract class UpgradePlusPlus : NamedModContent
     public virtual SpriteReference? ContainerReference =>
         string.IsNullOrEmpty(Container) ? null : GetSpriteReferenceOrDefault(Container);
 
+    /// <summary>
+    /// Whether this upgrade requires a confirmation popup
+    /// </summary>
+    public virtual bool NeedsConfirmation => false;
+
+    /// <summary>
+    /// The title for the confirmation popup, if needed
+    /// </summary>
+    public virtual string? ConfirmationTitle => null;
+
+    /// <summary>
+    /// The body text for the confirmation popup, if needed
+    /// </summary>
+    public virtual string? ConfirmationBody => null;
+
     private UpgradeModel? upgradeModel;
 
     /// <summary>
@@ -82,7 +96,7 @@ public abstract class UpgradePlusPlus : NamedModContent
     /// A Diamond version of the Tier 5 Upgrade Container
     /// </summary>
     protected static string UpgradeContainerDiamond => GetTextureGUID<PathsPlusPlusMod>("UpgradeContainerDiamond");
-    
+
     /// <summary>
     /// A Rainbow version of the Tier 5 Upgrade Container
     /// </summary>
@@ -97,13 +111,31 @@ public abstract class UpgradePlusPlus : NamedModContent
         Game.instance.model.AddUpgrade(GetUpgradeModel());
     }
 
+    /// <inheritdoc />
+    public override void RegisterText(Il2CppSystem.Collections.Generic.Dictionary<string, string> textTable)
+    {
+        base.RegisterText(textTable);
+        if (NeedsConfirmation)
+        {
+            if (ConfirmationTitle != null)
+            {
+                textTable[Id + " Title"] = ConfirmationTitle;
+            }
+
+            if (ConfirmationBody != null)
+            {
+                textTable[Id + " Body"] = ConfirmationBody;
+            }
+        }
+    }
+
 
     /// <summary>
     /// Gets or constructs the UpgradeModel for this UpgradePlusPlus
     /// </summary>
     /// <returns></returns>
-    public UpgradeModel GetUpgradeModel() =>
-        upgradeModel ??= new UpgradeModel(Id, Cost, 0, IconReference, Path.Path, Tier - 1, 0, "", "");
+    public UpgradeModel GetUpgradeModel() => upgradeModel ??= new UpgradeModel(Id, Cost, 0, IconReference, Path.Path,
+        Tier - 1, 0, NeedsConfirmation ? Id : "", "");
 
     /// <summary>
     /// Returns whether this Upgrade is of a higher tier than any other base or PathsPlusPlus upgrade that the tower has
@@ -132,6 +164,15 @@ public abstract class UpgradePlusPlus : NamedModContent
     /// <param name="tier">The total tier that this tower has in this Upgrade Path</param>
     public virtual void ApplyUpgrade(TowerModel towerModel, int tier)
     {
+    }
+
+    /// <summary>
+    /// Runs in game when this upgrade is applied to a Tower for the first time
+    /// </summary>
+    /// <param name="tower">The tower being upgraded</param>
+    public virtual void OnUpgraded(Tower tower)
+    {
+        
     }
 }
 

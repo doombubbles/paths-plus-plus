@@ -2,7 +2,6 @@
 using System.Linq;
 using BTD_Mod_Helper;
 using Il2CppAssets.Scripts.Models.Towers;
-using Il2CppAssets.Scripts.Models.Towers.Behaviors;
 using Il2CppAssets.Scripts.Simulation.Towers;
 
 namespace PathsPlusPlus;
@@ -59,12 +58,12 @@ public static class PathPlusPlusExtensions
 
     /// <summary>
     /// Sets the tier for a given PathPlusPlus pathId to be a particular value.
-    /// Will handle the mutation of the tower but not any upgrade side effects
     /// </summary>
     /// <param name="tower">The tower</param>
     /// <param name="pathId">The PathPlusPlus id</param>
     /// <param name="tier">The new desired tier</param>
-    public static void SetTier(this Tower tower, string pathId, int tier)
+    /// <param name="onUpgrade">Whether onUpgrade effects are triggered</param>
+    public static void SetTier(this Tower tower, string pathId, int tier, bool onUpgrade = false)
     {
         if (!PathsPlusPlusMod.PathsById.TryGetValue(pathId, out var path))
         {
@@ -72,21 +71,21 @@ public static class PathPlusPlusExtensions
             return;
         }
 
-        path.SetTier(tower, tier);
+        path.SetTier(tower, tier, onUpgrade);
     }
 
     /// <summary>
     /// Sets the tier for a given PathPlusPlus number to be a particular value.
-    /// Will handle the mutation of the tower but not any upgrade side effects
     /// </summary>
     /// <param name="tower">The tower</param>
     /// <param name="path">The PathPlusPlus number</param>
     /// <param name="tier">The new desired tier</param>
-    public static void SetTier(this Tower tower, int path, int tier)
+    /// <param name="onUpgrade">Whether onUpgrade effects are triggered</param>
+    public static void SetTier(this Tower tower, int path, int tier, bool onUpgrade = false)
     {
         if (PathPlusPlus.TryGetPath(tower.towerModel.baseId, path, out var pathPlusPlus))
         {
-            pathPlusPlus.SetTier(tower, tier);
+            pathPlusPlus.SetTier(tower, tier, onUpgrade);
         }
     }
 
