@@ -20,7 +20,7 @@ using UnityEngine;
 namespace PathsPlusPlus;
 
 /// <summary>
-/// 
+/// Main Paths++ mod class
 /// </summary>
 public class PathsPlusPlusMod : BloonsTD6Mod
 {
@@ -74,6 +74,8 @@ public class PathsPlusPlusMod : BloonsTD6Mod
         disabledButton = VanillaSprites.ParagonBtnLong
     };
 
+    #region Hotkeys
+
     internal static readonly ModSettingCategory Hotkeys = new("Hotkeys");
 
     internal static readonly ModSettingHotkey UpgradePath4 = new(KeyCode.Comma, HotkeyModifier.Shift)
@@ -122,8 +124,15 @@ public class PathsPlusPlusMod : BloonsTD6Mod
         { 8, UpgradePath9 },
     };
 
-    public override void OnUpdate()
+    #endregion
+
+
+    internal static MelonPreferences_Category Preferences { get; private set; } = null!;
+
+    /// <inheritdoc />
+    public override void OnApplicationStart()
     {
+        Preferences = MelonPreferences.CreateCategory("PathsPlusPlusPreferences");
     }
 
     /// <inheritdoc />

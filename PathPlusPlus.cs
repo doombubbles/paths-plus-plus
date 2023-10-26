@@ -8,6 +8,7 @@ using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Behaviors;
 using Il2CppAssets.Scripts.Simulation.Towers;
+using MelonLoader;
 
 namespace PathsPlusPlus;
 
@@ -89,9 +90,13 @@ public abstract class PathPlusPlus : ModContent
     public static bool DefaultValidTiers(int[] tiers) =>
         ModHelper.HasMod("UltimateCrosspathing") || tiers.Count(i => i > 2) <= 1 && tiers.Count(i => i > 0) <= 2;
 
+    internal MelonPreferences_Entry<bool> Override { get; private set; } = null!;
+
     /// <inheritdoc />
     public override void Register()
     {
+        // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+        Override ??= PathsPlusPlusMod.Preferences.CreateEntry(Id, false);
         PathsPlusPlusMod.PathsById[Id] = this;
 
         if (ExtendVanillaPath is >= Top and <= Bottom)
@@ -100,9 +105,12 @@ public abstract class PathPlusPlus : ModContent
 
             if (!PathsPlusPlusMod.ExtendedPathsByTower.TryGetValue(Tower, out var array))
                 array = PathsPlusPlusMod.ExtendedPathsByTower[Tower] = new PathPlusPlus[3];
+
             if (array[Path] is PathPlusPlus other)
             {
-                ModHelper.Msg<PathsPlusPlusMod>($"Replacing {other.Id} with {Id} for {Tower} path {Path}");
+                if (!Override.Value) return;
+
+                ModHelper.Msg<PathsPlusPlusMod>($"Overriding {other.Id} with {Id} for {Tower} path {Path}");
             }
 
             array[Path] = this;

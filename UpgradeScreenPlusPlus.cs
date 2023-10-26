@@ -8,7 +8,10 @@ using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Behaviors.Abilities;
+using Il2CppAssets.Scripts.Unity.Menu;
+using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 using Il2CppAssets.Scripts.Unity.UI_New.Upgrade;
+using Il2CppInterop.Runtime.Attributes;
 using Il2CppSystem.Collections.Generic;
 using MelonLoader;
 using UnityEngine;
@@ -162,6 +165,9 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
         var deltaX = 0f;
         foreach (var extendedPath in extendedPaths)
         {
+            var multiple = ModContent.GetContent<PathPlusPlus>().Any(path =>
+                path != extendedPath && path.Tower == extendedPath.Tower && path.Path == extendedPath.Path);
+
             var extraUpgrades = extraUpgradeDetails[extendedPath.ExtendVanillaPath];
             var upgrades = extendedPath.ExtendVanillaPath switch
             {
@@ -195,6 +201,28 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
                     var upgrade = extraUpgrades.Get(index);
 
                     SetUpgrade(upgrade, upgradePlusPlus);
+
+                    var cycle = upgrade.transform.GetComponentsInChildren<Button>(true)
+                        .FirstOrDefault(button => button.name == "Cycle");
+
+                    if (multiple && InGame.instance == null)
+                    {
+                        if (cycle == null)
+                        {
+                            var button = ModHelperButton.Create(new Info("Cycle", 100, 100, new Vector2(0, 0.5f)),
+                                VanillaSprites.RetryIcon, null);
+                            button.SetParent(upgrade.transform);
+                            cycle = button.Button;
+                        }
+
+                        cycle.gameObject.SetActive(true);
+                        cycle.SetOnClick(() => CycleExtendedPath(extendedPath, upgrade));
+                        multiple = false;
+                    }
+                    else if (cycle != null)
+                    {
+                        cycle.gameObject.SetActive(false);
+                    }
                 }
                 catch (Exception e)
                 {
@@ -263,7 +291,7 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
         upgradePaths.SetParent(scrollPanel.ScrollContent.transform);
         upgradePaths.sizeDelta = Vector2.zero;
         scrollContent.pivot = new Vector2(0, 1);
-        
+
         var rect = upgradeScreen.transform.Cast<RectTransform>().rect;
         var aspectRatio = rect.width / rect.height;
         var leftSideWidth = aspectRatio switch
@@ -291,6 +319,36 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
         {
             x = scrollContent.anchoredPosition.x + paragonOffset
         };
+    }
+
+    [HideFromIl2Cpp]
+    private void CycleExtendedPath(PathPlusPlus extendedPath, UpgradeDetails upgradeDetails)
+    {
+        MenuManager.instance.buttonClick3Sound.Play();
+
+        var allPaths = ModContent.GetContent<PathPlusPlus>()
+            .Where(path => path.Tower == extendedPath.Tower && path.Path == extendedPath.Path)
+            .ToList();
+        var currentIndex = allPaths.IndexOf(extendedPath);
+        var nextPath = allPaths[(currentIndex + 1) % allPaths.Count];
+
+        foreach (var path in allPaths)
+        {
+            path.Override.Value = path == nextPath;
+        }
+
+        nextPath.Register();
+
+        PathsPlusPlusMod.Preferences.SaveToFile(false);
+
+        var before = scrollPanel.ScrollContent.transform.localPosition;
+
+        UpdateUi(extendedPath.Tower);
+
+        scrollPanel.ScrollContent.transform.localPosition = before;
+
+        upgradeDetails.OnPointerExit(null);
+        upgradeDetails.OnPointerEnter(null);
     }
 
     [HarmonyPatch(typeof(UpgradeScreen), nameof(UpgradeScreen.UpdateUi))]

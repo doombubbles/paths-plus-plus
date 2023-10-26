@@ -1,6 +1,9 @@
 - Fix custom upgrade containers not appearing for tier 5+ upgrades on towers with paragons
-- When Paths++ and Paragon upgrades overlap for a tower, you can right click on the upgrade to swap which one is showing
-  - The "Paragon Overlap Default" setting controls which is the one it starts off as showing, with Paths++ being the default
+- When Paths++ and Paragon upgrades overlap for a tower, a button now appears on the upgrade to swap which one is showing
+  - The "Paragon Overlap Default" mod setting controls which is the one it starts off as showing, with Paths++ being the default
+  - You can also right click the upgrade to swap
+- When multiple extensions for the same vanilla path on a tower are installed together, a button now appears in the upgrades screen to cycle through which will be used in games
+  - Can only swap when not in an active game
 - Improved upgrade screen visuals for non 16x9 aspect ratios
 - `PathPlusPlus.ValidTiers` can now override Ultimate Crosspathing when Balanced Mode is on, if the modder so desires
 - Added `NeedsConfirmation`, `ConfirmationTitle` and `ConfirmationBody` overrides for `UpgradePlusPlus`s that work like they do for `ModUpgrades`s

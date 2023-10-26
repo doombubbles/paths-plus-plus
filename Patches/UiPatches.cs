@@ -7,7 +7,6 @@ using HarmonyLib;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity.Bridge;
-using Il2CppAssets.Scripts.Unity.Menu;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
@@ -95,11 +94,18 @@ internal static class UpgradeObject_LoadUpgrades
     private static void Postfix(UpgradeObject __instance)
     {
         if (__instance.gameObject.HasComponent(out UpgradeObjectPlusPlus upgradeObj) &&
+            upgradeObj.GetPath() is PathPlusPlus path &&
             upgradeObj.IsExtra &&
             __instance.tier >= 5)
         {
             var upgradeButton = __instance.upgradeButton;
             var upgradeModel = __instance.GetUpgrade(null);
+
+            if (__instance.tts.CanUpgradeToParagon(true) &&
+                (!upgradeObj.overrideParagon || __instance.tier == path.UpgradeCount))
+            {
+                upgradeModel = InGame.Bridge.Model.GetUpgrade(__instance.tts.Def.paragonUpgrade.upgrade);
+            }
 
             upgradeButton.SetUpgradeModel(upgradeModel);
             upgradeButton.UpdateVisuals(__instance.path, false);
@@ -255,7 +261,7 @@ internal class UpgradeObject_CheckBlockedPath
         var path = __instance.path;
         var pathPlusPlus = PathPlusPlus.GetPath(tower.towerModel.baseId, path);
         var max = pathPlusPlus?.UpgradeCount ?? 5;
-        
+
         if (!PathsPlusPlusMod.BalancedMode && pathPlusPlus != null)
         {
             __result = max;
@@ -425,20 +431,10 @@ internal static class UpgradeButton_OnPointerDown
     [HarmonyPostfix]
     private static void Postfix(UpgradeButton __instance, PointerEventData eventData)
     {
-        if (eventData.button != PointerEventData.InputButton.Right ||
-            !TowerSelectionMenu.instance.selectedTower.CanUpgradeToParagon(true)) return;
-
-        var button = __instance.GetComponentInParent<UpgradeObjectPlusPlus>();
-        var upgradeObject = __instance.GetComponentInParent<UpgradeObject>();
-
-        if (button == null || upgradeObject.tier < 5) return;
-
-        var isExtra = button.IsExtra;
-        button.overrideParagon = !button.overrideParagon;
-        if (isExtra || button.IsExtra)
+        if (eventData.button == PointerEventData.InputButton.Right &&
+            TowerSelectionMenu.instance.selectedTower.CanUpgradeToParagon(true))
         {
-            __instance.GetComponentInParent<UpgradeObject>().LoadUpgrades();
-            MenuManager.instance.buttonClickSound.Play();
+            __instance.GetComponentInParent<UpgradeObjectPlusPlus>().Exists()?.CycleParagon();
         }
     }
 }
