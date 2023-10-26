@@ -23,12 +23,12 @@ internal static class TowerSelectionMenu_IsUpgradePathClosed
         }
 
         var tower = __instance.selectedTower.tower;
-        var tiers = tower.GetAllTiers();
         var towerId = tower.towerModel.baseId;
+        var tiers = tower.GetAllTiers();
+        tiers[path]++;
 
         if (PathPlusPlus.TryGetPath(tower.towerModel.baseId, path, out var pathPlusPlus))
         {
-            tiers[path]++;
             __result = !pathPlusPlus.ValidTiers(tiers.ToArray());
             return false;
         }
