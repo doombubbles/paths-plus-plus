@@ -21,7 +21,9 @@ namespace PathsPlusPlus;
 internal class UpgradeScreenPlusPlus : MonoBehaviour
 {
     private const int TopBarHeight = 345;
-    private const int LeftSideWidth = 1240; // TODO fix for non 16x9
+    private const int LeftSideWidth16X9 = 1240;
+    private const int LeftSideWidth16X10 = 1010;
+    private const int LeftSideWidth4X3 = 849;
     private const int PathsSpacing = 525;
     private const int UpgradeSpacing = 490;
 
@@ -150,7 +152,7 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
 
             upgradeScreen.ResetUpgradeUnlocks(
                 upgradeDetails.Take(pathPlusPlus.Upgrades.Length).ToIl2CppReferenceArray(), null);
-            
+
             foreach (var upgradeDetail in upgradeDetails)
             {
                 upgradeDetail.SetUpgradeScreen(upgradeScreen);
@@ -204,7 +206,7 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
 
             upgradeScreen.ResetUpgradeUnlocks(
                 extraUpgrades.Where(details => details.gameObject.active).ToIl2CppReferenceArray(), null);
-            
+
             foreach (var upgradeDetails in extraUpgrades)
             {
                 upgradeDetails.SetUpgradeScreen(upgradeScreen);
@@ -261,11 +263,20 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
         upgradePaths.SetParent(scrollPanel.ScrollContent.transform);
         upgradePaths.sizeDelta = Vector2.zero;
         scrollContent.pivot = new Vector2(0, 1);
+        
+        var rect = upgradeScreen.transform.Cast<RectTransform>().rect;
+        var aspectRatio = rect.width / rect.height;
+        var leftSideWidth = aspectRatio switch
+        {
+            < 1.5f => LeftSideWidth4X3,
+            < 1.7f => LeftSideWidth16X10,
+            _ => LeftSideWidth16X9
+        };
 
         var before = upgradePaths.localPosition;
         scrollPanel.RectTransform.pivot = new Vector2(1, 0);
-        scrollPanel.RectTransform.sizeDelta = new Vector2(-LeftSideWidth, -TopBarHeight);
-        upgradePaths.localPosition = before + new Vector3(-LeftSideWidth, TopBarHeight, 0);
+        scrollPanel.RectTransform.sizeDelta = new Vector2(-leftSideWidth, -TopBarHeight);
+        upgradePaths.localPosition = before + new Vector3(-leftSideWidth, TopBarHeight, 0);
 
         scrollPanel.transform.SetSiblingIndex(4);
 
