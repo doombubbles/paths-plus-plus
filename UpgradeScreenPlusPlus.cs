@@ -125,7 +125,7 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
             upgradePath.SetActive(true);
             var upgradeDetails = upgradePath.GetComponentsInChildren<UpgradeDetails>();
 
-            for (var i = 0; i < pathPlusPlus.Upgrades.Length; i++)
+            for (var i = 0; i < pathPlusPlus.Upgrades.Count; i++)
             {
                 try
                 {
@@ -148,13 +148,13 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
                 }
             }
 
-            for (var i = pathPlusPlus.Upgrades.Length; i < upgradeDetails.Length; i++)
+            for (var i = pathPlusPlus.Upgrades.Count; i < upgradeDetails.Length; i++)
             {
                 upgradeDetails[i].gameObject.SetActive(false);
             }
 
             upgradeScreen.ResetUpgradeUnlocks(
-                upgradeDetails.Take(pathPlusPlus.Upgrades.Length).ToIl2CppReferenceArray(), null);
+                upgradeDetails.Take(pathPlusPlus.Upgrades.Count).ToIl2CppReferenceArray(), null);
 
             foreach (var upgradeDetail in upgradeDetails)
             {
@@ -185,11 +185,11 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
                 _ => throw new IndexOutOfRangeException()
             };
 
-            foreach (var upgradePlusPlus in extendedPath.Upgrades.Where(upgrade => upgrade != null))
+            foreach (var upgradePlusPlus in extendedPath.Upgrades.Values)
             {
                 try
                 {
-                    var index = upgradePlusPlus!.Tier - 6;
+                    var index = upgradePlusPlus.Tier - 6;
 
                     if (index >= extraUpgrades.Count)
                     {

@@ -18,7 +18,9 @@ namespace PathsPlusPlus;
 public abstract class PathPlusPlus : ModContent
 {
     /// <inheritdoc />
-    protected sealed override float RegistrationPriority => base.RegistrationPriority;
+    protected sealed override float RegistrationPriority => 11;
+    
+    internal int StartTier => ExtendVanillaPath >= 0 ? 5 : 0;
 
     /// <summary>
     /// The tower id this path is for, use <code>TowerType.XXX</code>
@@ -30,7 +32,7 @@ public abstract class PathPlusPlus : ModContent
     /// <br/>
     /// If you're setting <see cref="ExtendVanillaPath"/>, this will be the new max upgrade count for the path.
     /// </summary>
-    public abstract int UpgradeCount { get; }
+    public virtual int UpgradeCount => StartTier + Upgrades.Count;
 
     /// <summary>
     /// Which internal path id this PathPlusPlus will have.
@@ -58,12 +60,10 @@ public abstract class PathPlusPlus : ModContent
     /// </summary>
     protected internal const int Bottom = 2;
 
-    private UpgradePlusPlus[]? upgrades;
-
     /// <summary>
     /// The UpgradePlusPlus(s) for this path
     /// </summary>
-    public UpgradePlusPlus?[] Upgrades => upgrades ??= new UpgradePlusPlus[UpgradeCount];
+    public readonly SortedDictionary<int, UpgradePlusPlus> Upgrades = new();
 
     /// <summary>
     /// Whether this path should appear in the Upgrades Screen for the tower
@@ -75,7 +75,7 @@ public abstract class PathPlusPlus : ModContent
     ///<br/>
     /// By default, it will first check if <see cref="PathsPlusPlusMod.BalancedMode"/> is false and return false.
     /// <br/>
-    /// Otherwise, will 
+    /// Otherwise, will use <see cref="DefaultValidTiers"/>
     /// </summary>
     /// <param name="tiers">List of all tiers for this tower, will be length 3+</param>
     /// <returns>Whether to block the upgrade from happening</returns>
@@ -95,6 +95,15 @@ public abstract class PathPlusPlus : ModContent
     /// <inheritdoc />
     public override void Register()
     {
+        var highest = Upgrades.Values.Select(upgrade => upgrade.Tier).DefaultIfEmpty(0).Max();
+        for (var tier = StartTier; tier < highest; tier++)
+        {
+            if (!Upgrades.ContainsKey(tier))
+            {
+                throw new Exception($"Path {Id} is missing Upgrade for tier {tier + 1}");
+            }
+        }
+        
         // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
         Override ??= PathsPlusPlusMod.Preferences.CreateEntry(Id, false);
         PathsPlusPlusMod.PathsById[Id] = this;
