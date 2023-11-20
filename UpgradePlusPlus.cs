@@ -120,8 +120,6 @@ public abstract class UpgradePlusPlus : NamedModContent
         }
 
         PathsPlusPlusMod.UpgradesById[Id] = this;
-
-        Game.instance.model.AddUpgrade(GetUpgradeModel());
     }
 
     /// <inheritdoc />

@@ -8,6 +8,7 @@ using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Behaviors;
 using Il2CppAssets.Scripts.Simulation.Towers;
+using Il2CppAssets.Scripts.Unity;
 using MelonLoader;
 
 namespace PathsPlusPlus;
@@ -19,7 +20,7 @@ public abstract class PathPlusPlus : ModContent
 {
     /// <inheritdoc />
     protected sealed override float RegistrationPriority => 11;
-    
+
     internal int StartTier => ExtendVanillaPath >= 0 ? 5 : 0;
 
     /// <summary>
@@ -103,7 +104,7 @@ public abstract class PathPlusPlus : ModContent
                 throw new Exception($"Path {Id} is missing Upgrade for tier {tier + 1}");
             }
         }
-        
+
         // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
         Override ??= PathsPlusPlusMod.Preferences.CreateEntry(Id, false);
         PathsPlusPlusMod.PathsById[Id] = this;
@@ -131,6 +132,11 @@ public abstract class PathPlusPlus : ModContent
             Path = 3 + list.Count;
             list.Add(this);
         }
+
+        foreach (var upgrade in Upgrades.Values)
+        {
+            Game.instance.model.AddUpgrade(upgrade.GetUpgradeModel());
+        }
     }
 
     /// <summary>
@@ -145,7 +151,7 @@ public abstract class PathPlusPlus : ModContent
     /// <summary>
     /// The Priority given to the PathPlusPlus mutator on the tower
     /// </summary>
-    protected virtual int Priority => -100 - Order;
+    protected virtual int Priority => 100 - Order;
 
     /// <summary>
     /// Applies all upgrades for this path up through the given tier on a TowerModel.
