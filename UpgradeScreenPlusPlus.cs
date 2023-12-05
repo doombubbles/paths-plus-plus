@@ -337,7 +337,7 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
             path.Override.Value = path == nextPath;
         }
 
-        nextPath.Register();
+        nextPath.AssignPath();
 
         PathsPlusPlusMod.Preferences.SaveToFile(false);
 

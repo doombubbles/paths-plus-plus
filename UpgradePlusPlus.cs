@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using BTD_Mod_Helper.Api;
-using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Towers;
-using Il2CppAssets.Scripts.Unity;
 using Il2CppAssets.Scripts.Utils;
 
 namespace PathsPlusPlus;
@@ -139,6 +137,8 @@ public abstract class UpgradePlusPlus : NamedModContent
             }
         }
     }
+    
+    
 
 
     /// <summary>

@@ -108,7 +108,17 @@ public abstract class PathPlusPlus : ModContent
         // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
         Override ??= PathsPlusPlusMod.Preferences.CreateEntry(Id, false);
         PathsPlusPlusMod.PathsById[Id] = this;
+        
+        AssignPath();
 
+        foreach (var upgrade in Upgrades.Values)
+        {
+            Game.instance.model.AddUpgrade(upgrade.GetUpgradeModel());
+        }
+    }
+
+    internal void AssignPath()
+    {
         if (ExtendVanillaPath is >= Top and <= Bottom)
         {
             Path = ExtendVanillaPath;
@@ -131,11 +141,6 @@ public abstract class PathPlusPlus : ModContent
                 list = PathsPlusPlusMod.PathsByTower[Tower] = new List<PathPlusPlus>();
             Path = 3 + list.Count;
             list.Add(this);
-        }
-
-        foreach (var upgrade in Upgrades.Values)
-        {
-            Game.instance.model.AddUpgrade(upgrade.GetUpgradeModel());
         }
     }
 
@@ -163,8 +168,7 @@ public abstract class PathPlusPlus : ModContent
         tower.tier = Math.Max(tower.tier, Math.Min(5, tier));
         for (var i = 0; i < tier; i++)
         {
-            var upgrade = Upgrades[i];
-            if (upgrade == null) continue;
+            if (!Upgrades.TryGetValue(i, out var upgrade)) continue;
 
             upgrade.ApplyUpgrade(tower);
             upgrade.ApplyUpgrade(tower, tier);
