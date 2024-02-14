@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using BTD_Mod_Helper;
+using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
@@ -11,6 +13,7 @@ using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using UnityEngine.EventSystems;
+using Object = Il2CppSystem.Object;
 
 namespace PathsPlusPlus.Patches;
 
@@ -295,26 +298,34 @@ internal class UpgradeObject_CheckBlockedPath
     }
 }
 
-[HarmonyPatch(typeof(TowerSelectionMenu.__c__DisplayClass64_0),
-    nameof(TowerSelectionMenu.__c__DisplayClass64_0._UpgradeTower_b__0))]
-internal static class TowerSelectionMenu_DisplayClass62_UpgradeTower
+[HarmonyPatch]
+internal static class TowerSelectionMenu_DisplayClass_UpgradeTower
 {
-    [HarmonyPrefix]
-    private static bool Prefix(TowerSelectionMenu.__c__DisplayClass64_0 __instance, bool isUpgraded)
+    private static IEnumerable<MethodBase> TargetMethods()
     {
-        if (__instance.path < 3) return true;
+        yield return typeof(TowerSelectionMenu)
+            .GetNestedTypes()
+            .SelectMany(type => type.GetMethods("_UpgradeTower_b__0"))
+            .Single(info => info.GetParameters().Any(param => param.Name == "isUpgraded"));
+    }
 
-        var menu = __instance.__4__this;
+    [HarmonyPrefix]
+    private static bool Prefix(Object __instance, bool isUpgraded)
+    {
+        var path = __instance.GetIl2CppType().GetField("path").GetValue(__instance).Unbox<int>();
+        if (path < 3) return true;
 
-        var upgradeObject = menu.upgradeButtons[__instance.path];
+        var menu = __instance.GetIl2CppType().GetField("<>4__this").GetValue(__instance).Cast<TowerSelectionMenu>();
+
+        var upgradeObject = menu.upgradeButtons[path];
 
         if (!upgradeObject.isActiveAndEnabled) return false;
 
         if (!isUpgraded)
         {
-            upgradeObject.tier = menu.selectedTower.tower.GetTier(__instance.path);
+            upgradeObject.tier = menu.selectedTower.tower.GetTier(path);
             upgradeObject.LoadUpgrades();
-            __instance.__4__this.UpdateUpgradeVisuals();
+            menu.UpdateUpgradeVisuals();
         }
 
         upgradeObject.PostSimUpgrade();

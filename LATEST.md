@@ -1,2 +1,2 @@
-- Fixed for BTD6 v40.0
-- The `UpgradeCount` property no longer needs to be manually specified for Paths, it will be inferred if omitted
+- Fixed for BTD6 v41.1
+  - The specific patch in question should now also be more resilient to game updates going forward
