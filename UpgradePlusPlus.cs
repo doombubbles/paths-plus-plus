@@ -5,7 +5,7 @@ using BTD_Mod_Helper.Api;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Towers;
-using Il2CppAssets.Scripts.Utils;
+using Il2CppNinjaKiwi.Common.ResourceUtils;
 
 namespace PathsPlusPlus;
 
@@ -137,8 +137,6 @@ public abstract class UpgradePlusPlus : NamedModContent
             }
         }
     }
-    
-    
 
 
     /// <summary>
