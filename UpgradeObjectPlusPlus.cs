@@ -18,8 +18,6 @@ internal class UpgradeObjectPlusPlus : MonoBehaviour
 
     public string? pathId;
 
-    public bool getLowerUpgrade;
-
     public bool overrideParagon = PathsPlusPlusMod.ParagonOverlapDefault;
 
     public ModHelperButton? cycle;

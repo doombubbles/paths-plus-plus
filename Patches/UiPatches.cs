@@ -5,6 +5,7 @@ using System.Reflection;
 using BTD_Mod_Helper;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
+using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity.Bridge;
@@ -78,31 +79,22 @@ internal static class TowerSelectionMenu_InitUpgradeButtons
 }
 
 /// <summary>
-/// Set up getting the correct UpgradeModel within this method
+/// Set the correct UpgradeModels for the UpgradeButton and CurrentUpgrade
 /// </summary>
 [HarmonyPatch(typeof(UpgradeObject), nameof(UpgradeObject.LoadUpgrades))]
 internal static class UpgradeObject_LoadUpgrades
 {
-    [HarmonyPrefix]
-    private static void Prefix(UpgradeObject __instance)
-    {
-        if (__instance.gameObject.HasComponent(out UpgradeObjectPlusPlus upgradeObj) && upgradeObj.IsExtra)
-        {
-            upgradeObj.getLowerUpgrade = __instance.tier > 0;
-        }
-    }
-
     [HarmonyPostfix]
     private static void Postfix(UpgradeObject __instance)
     {
-        if (__instance.gameObject.HasComponent(out UpgradeObjectPlusPlus upgradeObj) &&
-            upgradeObj.GetPath() is PathPlusPlus path &&
-            upgradeObj.IsExtra &&
-            __instance.tier >= 5)
+        if (!__instance.gameObject.HasComponent(out UpgradeObjectPlusPlus upgradeObj) ||
+            upgradeObj.GetPath() is not { } path ||
+            !upgradeObj.IsExtra) return;
+
+        if (__instance.tier < path.UpgradeCount)
         {
             var upgradeButton = __instance.upgradeButton;
-            var upgradeModel = __instance.GetUpgrade(null);
-
+            var upgradeModel = InGame.Bridge.Model.GetUpgrade(path.Upgrades[__instance.tier].Id);
             if (__instance.tts.CanUpgradeToParagon(true) &&
                 (!upgradeObj.overrideParagon || __instance.tier == path.UpgradeCount))
             {
@@ -112,49 +104,12 @@ internal static class UpgradeObject_LoadUpgrades
             upgradeButton.SetUpgradeModel(upgradeModel);
             upgradeButton.UpdateVisuals(__instance.path, false);
         }
-    }
-}
 
-/// <summary>
-/// Control getting the correct UpgradeModel within UpgradeObject.LoadUpgrades
-/// </summary>
-[HarmonyPatch(typeof(UpgradeObject), nameof(UpgradeObject.GetUpgrade))]
-internal static class UpgradeObject_GetUpgrade
-{
-    [HarmonyPrefix]
-    private static bool Prefix(UpgradeObject __instance, ref UpgradeModel? __result)
-    {
-        try
+        if (__instance.tier > 0 && (__instance.path > 2 || __instance.tier > 5))
         {
-            if (__instance.gameObject.HasComponent(out UpgradeObjectPlusPlus upgradeObj) &&
-                upgradeObj.IsExtra &&
-                upgradeObj.GetPath() is PathPlusPlus path)
-            {
-                if (upgradeObj.getLowerUpgrade)
-                {
-                    upgradeObj.getLowerUpgrade = false;
-                    if (__instance is { path: < 3, tier: 5 }) return true;
-
-                    __result = InGame.Bridge.Model.GetUpgrade(path.Upgrades[Math.Max(0, __instance.tier - 1)]!.Id);
-                }
-                else if (__instance.tier < path.UpgradeCount)
-                {
-                    __result = InGame.Bridge.Model.GetUpgrade(path.Upgrades[__instance.tier]!.Id);
-                }
-                else
-                {
-                    __result = null;
-                }
-
-                return false;
-            }
+            var currentUpgradeModel = InGame.Bridge.Model.GetUpgrade(path.Upgrades[__instance.tier - 1].Id);
+            __instance.currentUpgrade.SetUpgradeModel(currentUpgradeModel, __instance.tts);
         }
-        catch (Exception e)
-        {
-            ModHelper.Warning<PathsPlusPlusMod>(e);
-        }
-
-        return true;
     }
 }
 

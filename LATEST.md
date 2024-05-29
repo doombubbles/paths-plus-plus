@@ -1,2 +1,1 @@
-- Fixed for BTD6 v41.1
-  - The specific patch in question should now also be more resilient to game updates going forward
+- Fixed for BTD6 v43
