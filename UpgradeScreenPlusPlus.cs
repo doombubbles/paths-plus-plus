@@ -67,11 +67,11 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
         }
 
         var extraPaths = PathsPlusPlusMod.PathsByTower.TryGetValue(towerId, out var somePaths)
-            ? somePaths.Where(path => path is { ShowInMenu: true }).ToList()
+            ? somePaths.Where(path => path is {ShowInMenu: true}).ToList()
             : new System.Collections.Generic.List<PathPlusPlus>();
 
         var extendedPaths = PathsPlusPlusMod.ExtendedPathsByTower.TryGetValue(towerId, out var morePaths)
-            ? morePaths.Where(path => path is { ShowInMenu: true }).ToList()!
+            ? morePaths.Where(path => path is {ShowInMenu: true}).ToList()!
             : new System.Collections.Generic.List<PathPlusPlus>();
 
         var allPaths = extraPaths.Concat(extendedPaths).ToArray();
@@ -96,10 +96,13 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
 
         var before = upgradePaths.localPosition;
         var deltaY = 0f;
+        var deltaX = 0f;
+        
         for (var path = 0; path < extraPaths.Count; path++)
         {
             var pathPlusPlus = extraPaths[path];
             deltaY += PathsSpacing;
+            deltaX = Math.Max(deltaX, (pathPlusPlus.UpgradeCount - 5) * UpgradeSpacing);
 
             GameObject upgradePath;
             if (path >= createdUpgradePaths.Count)
@@ -162,9 +165,10 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
             }
         }
 
-        var deltaX = 0f;
         foreach (var extendedPath in extendedPaths)
         {
+            deltaX = Math.Max(deltaX, (extendedPath.UpgradeCount - 5) * UpgradeSpacing);
+            
             var multiple = ModContent.GetContent<PathPlusPlus>().Any(path =>
                 path != extendedPath && path.Tower == extendedPath.Tower && path.Path == extendedPath.Path);
 
@@ -230,7 +234,6 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
                 }
             }
 
-            deltaX = Math.Max(deltaX, (extendedPath.UpgradeCount - 5) * UpgradeSpacing);
 
             upgradeScreen.ResetUpgradeUnlocks(
                 extraUpgrades.Where(details => details.gameObject.active).ToIl2CppReferenceArray(), null);
@@ -251,12 +254,11 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
     {
         upgrade.gameObject.SetActive(true);
 
-        upgrade.SetUpgrade(upgradePlusPlus.Path.Tower, upgradePlusPlus.GetUpgradeModel(),
+        upgrade.SetUpgrade(upgrade.baseTowerID, upgradePlusPlus.GetUpgradeModel(),
             new List<AbilityModel>().Cast<ICollection<AbilityModel>>(), upgradePlusPlus.Path.Path,
-            upgradePlusPlus.PortraitReference ??
-            ModContent.CreateSpriteReference(
-                VanillaSprites.ByName.TryGetValue(
-                    upgradePlusPlus.Path.Tower.Replace(TowerType.WizardMonkey, "Wizard") + "000", out var guid)
+            upgradePlusPlus.PortraitReference ?? ModContent.CreateSpriteReference(
+                VanillaSprites.ByName.TryGetValue(upgrade.baseTowerID.Replace(TowerType.WizardMonkey, "Wizard") + "000",
+                    out var guid)
                     ? guid
                     : ""));
 
