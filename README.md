@@ -180,4 +180,10 @@ Whenever you can, use `GetDescendants` to easily affect all instances of a given
 
 For modifying something specific, retrieve it by name if possible rather than just relying on the order. (e.g. `weapons.FirstOrDefault(model => model.name == ...)` instead of `weapons[2]`)
 
+### Applying to Multiple Towers
+
+You can use the `MultiPathPlusPlus` and `MultiUpdatePlusPlus` classes for making paths that apply to multiple towers.
+
+Apart from overriding `Towers` instead of `Tower`, usage will be the same
+
 [![Requires BTD6 Mod Helper](https://raw.githubusercontent.com/gurrenm3/BTD-Mod-Helper/master/banner.png)](https://github.com/gurrenm3/BTD-Mod-Helper#readme)

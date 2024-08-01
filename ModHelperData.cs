@@ -2,8 +2,8 @@ namespace PathsPlusPlus;
 
 internal static class ModHelperData
 {
-    public const string WorksOnVersion = "43.0";
-    public const string Version = "1.1.5";
+    public const string WorksOnVersion = "44.0";
+    public const string Version = "1.1.6";
     public const string Name = "Paths++";
 
     public const string Description = "A helper mod allowing additional upgrade paths and tiers to be made for towers.\n\n" +
