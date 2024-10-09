@@ -168,7 +168,7 @@ public abstract class PathPlusPlus : ModContent
         tower.tier = Math.Max(tower.tier, Math.Min(5, tier));
         for (var i = 0; i < tier; i++)
         {
-            if (!Upgrades.TryGetValue(i, out var upgrade)) continue;
+            if (!Upgrades.TryGetValue(i, out var upgrade) || tower.appliedUpgrades.Contains(upgrade.Id)) continue;
 
             upgrade.ApplyUpgrade(tower);
             upgrade.ApplyUpgrade(tower, tier);

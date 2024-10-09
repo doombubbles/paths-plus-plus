@@ -1,2 +1,1 @@
-- For modders, added `MultiPathPlusPlus` and `MultiUpdatePlusPlus` classes for making paths that apply to multiple towers
-  - Apart from overriding `Towers` instead of `Tower`, usage will be the same
+- Fixed for BTD6 v45

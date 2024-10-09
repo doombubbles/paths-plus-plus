@@ -296,17 +296,16 @@ internal static class TowerManager_GetTowerUpgradeCost
 {
     private static void Prefix(Tower tower, int path, int tier, ref Il2CppReferenceArray<UpgradePathModel>? __state)
     {
-        var towerModel = tower.towerModel;
-        if ((tier > 5 || path >= 3) &&
-            path >= 0 &&
-            PathPlusPlus.TryGetPath(towerModel.baseId, path, out var pathPlusPlus))
+        if (tower.towerModel?.Is(out var towerModel) != true ||
+            (tier <= 5 && path < 3) ||
+            path < 0 ||
+            !PathPlusPlus.TryGetPath(towerModel.baseId, path, out var pathPlusPlus)) return;
+
+        __state = towerModel.upgrades;
+        towerModel.upgrades = new[]
         {
-            __state = towerModel.upgrades;
-            towerModel.upgrades = new[]
-            {
-                new UpgradePathModel(pathPlusPlus.Upgrades[tier - 1]!.Id, towerModel.name)
-            };
-        }
+            new UpgradePathModel(pathPlusPlus.Upgrades[tier - 1]!.Id, towerModel.name)
+        };
     }
 
     [HarmonyPostfix]

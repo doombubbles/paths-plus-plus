@@ -44,12 +44,12 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
     public UpgradeScreenPlusPlus(IntPtr ptr) : base(ptr)
     {
         createdUpgradePaths = new List<GameObject>();
-        extraUpgradeDetails = new List<UpgradeDetails>[]
-        {
-            new(),
-            new(),
-            new(),
-        };
+        extraUpgradeDetails =
+        [
+            new List<UpgradeDetails>(),
+            new List<UpgradeDetails>(),
+            new List<UpgradeDetails>()
+        ];
     }
 
     public void UpdateUi(string towerId)
@@ -68,11 +68,11 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
 
         var extraPaths = PathsPlusPlusMod.PathsByTower.TryGetValue(towerId, out var somePaths)
             ? somePaths.Where(path => path is {ShowInMenu: true}).ToList()
-            : new System.Collections.Generic.List<PathPlusPlus>();
+            : [];
 
         var extendedPaths = PathsPlusPlusMod.ExtendedPathsByTower.TryGetValue(towerId, out var morePaths)
             ? morePaths.Where(path => path is {ShowInMenu: true}).ToList()!
-            : new System.Collections.Generic.List<PathPlusPlus>();
+            : [];
 
         var allPaths = extraPaths.Concat(extendedPaths).ToArray();
 
