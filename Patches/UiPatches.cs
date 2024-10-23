@@ -63,6 +63,8 @@ internal static class TowerSelectionMenu_InitUpgradeButtons
             {
                 button.pathId = null;
             }
+
+            upgradeButton.tier = 0;
         }
     }
 

@@ -1,1 +1,1 @@
-- Fixed for BTD6 v45
+- Fixed bug where upgrading a tower to Tier 6+ in an extra path could visually lock other towers' upgrades in Balanced Mode

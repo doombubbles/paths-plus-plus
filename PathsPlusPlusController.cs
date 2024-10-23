@@ -103,7 +103,7 @@ internal class PathsPlusPlusController : MonoBehaviour
         {
             for (var i = 3; i < menu.upgradeInfoPopups.Count; i++)
             {
-                var infoContainer = menu.upgradeInfoPopups[i].transform.parent;
+                var infoContainer = menu.upgradeInfoPopups[i]!.transform.parent;
                 var pos = infoContainer.localPosition;
                 infoContainer.localPosition = pos with
                 {
@@ -115,7 +115,7 @@ internal class PathsPlusPlusController : MonoBehaviour
 
     private void AddNewUpgradeObject()
     {
-        var upgradeObject = menu.upgradeButtons[0];
+        var upgradeObject = menu.upgradeButtons[0]!;
         var row = 3 + moreUpgradeButtons.Count;
         var newUpgrade = upgradeObject.gameObject.Duplicate(menu.towerDetails.transform);
 
@@ -132,7 +132,7 @@ internal class PathsPlusPlusController : MonoBehaviour
         menu.upgradeButtons = menu.upgradeButtons.AddTo(upgradeObj);
 
 
-        var basePopup = menu.upgradeInfoPopups[0].transform.parent.parent;
+        var basePopup = menu.upgradeInfoPopups[0]!.transform.parent.parent;
         var newPopupObject = basePopup.Duplicate(basePopup.transform.parent);
         newPopupObject.name = "Upgrade_" + (row + 1);
         var newPopUp = newPopupObject.GetComponentInChildren<UpgradeInfoPopup>();
@@ -178,8 +178,7 @@ internal class PathsPlusPlusController : MonoBehaviour
         
         if (menu.selectedTower is not { hero: null, tower.towerModel.isParagon: false } tower) return;
 
-        if (!PathsPlusPlusMod.PathsByTower.TryGetValue(tower.Def.baseId, out var list))
-            list = new System.Collections.Generic.List<PathPlusPlus>();
+        if (!PathsPlusPlusMod.PathsByTower.TryGetValue(tower.Def.baseId, out var list)) list = [];
 
         while (list.Count > moreUpgradeButtons.Count)
         {
@@ -190,7 +189,7 @@ internal class PathsPlusPlusController : MonoBehaviour
         {
             for (var p = 0; p < array.Length; p++)
             {
-                var upgradeButton = menu.upgradeButtons[p];
+                var upgradeButton = menu.upgradeButtons[p]!;
                 var button = upgradeButton.GetComponent<UpgradeObjectPlusPlus>();
                 if (button == null || !button.isActiveAndEnabled) continue;
                 
