@@ -76,7 +76,7 @@ To download PathsPlusPlus within GitHub actions, add the following step:
 
 ```yaml
 - name: Download PathsPlusPlus
-  uses: dawidd6/action-download-artifact@v2
+  uses: dawidd6/action-download-artifact@v6
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
     workflow: build.yml
