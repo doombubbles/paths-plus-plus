@@ -86,7 +86,7 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
             return;
         }
 
-        var maxUpgrades = allPaths.Max(path => path.UpgradeCount);
+        var maxUpgrades = allPaths.Max(path => path!.UpgradeCount);
         var minForScrolling = upgradeScreen.ShowParagonPanel() ? 6 : 7;
 
         scrollPanel.ScrollRect.enabled = true;
@@ -167,7 +167,7 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
 
         foreach (var extendedPath in extendedPaths)
         {
-            deltaX = Math.Max(deltaX, (extendedPath.UpgradeCount - 5) * UpgradeSpacing);
+            deltaX = Math.Max(deltaX, (extendedPath!.UpgradeCount - 5) * UpgradeSpacing);
             
             var multiple = ModContent.GetContent<PathPlusPlus>().Any(path =>
                 path != extendedPath && path.Tower == extendedPath.Tower && path.Path == extendedPath.Path);
