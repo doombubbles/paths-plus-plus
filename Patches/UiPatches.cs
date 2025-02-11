@@ -5,7 +5,6 @@ using System.Reflection;
 using BTD_Mod_Helper;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
-using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity.Bridge;
@@ -296,9 +295,9 @@ internal static class TowerSelectionMenu_DisplayClass_UpgradeTower
 [HarmonyPatch(typeof(TowerManager), nameof(TowerManager.GetTowerUpgradeCost))]
 internal static class TowerManager_GetTowerUpgradeCost
 {
-    private static void Prefix(Tower tower, int path, int tier, ref Il2CppReferenceArray<UpgradePathModel>? __state)
+    private static void Prefix(Tower? tower, int path, int tier, ref Il2CppReferenceArray<UpgradePathModel>? __state)
     {
-        if (tower.towerModel?.Is(out var towerModel) != true ||
+        if (tower?.towerModel?.Is(out var towerModel) != true ||
             (tier <= 5 && path < 3) ||
             path < 0 ||
             !PathPlusPlus.TryGetPath(towerModel.baseId, path, out var pathPlusPlus)) return;
@@ -313,7 +312,7 @@ internal static class TowerManager_GetTowerUpgradeCost
     [HarmonyPostfix]
     private static void Postfix(Tower tower, ref Il2CppReferenceArray<UpgradePathModel>? __state)
     {
-        if (__state != default)
+        if (__state != null)
         {
             tower.towerModel.upgrades = __state;
         }
