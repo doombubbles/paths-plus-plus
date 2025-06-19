@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using System.Linq;
+using HarmonyLib;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Input;
 using Il2CppAssets.Scripts.Simulation.Objects;
@@ -33,9 +34,10 @@ internal static class TowerSelectionMenu_IsUpgradePathClosed
             return false;
         }
 
-        if (PathsPlusPlusMod.PathsByTower.ContainsKey(towerId))
+        if (PathsPlusPlusMod.PathsByTower.TryGetValue(towerId, out var paths))
         {
-            __result = !PathPlusPlus.DefaultValidTiers(tiers.ToArray());
+            __result = !PathPlusPlus.DefaultValidTiers(tiers.Take(3).ToArray()) ||
+                       paths.Any(p => !p.ValidTiers(tiers.ToArray()));
             return false;
         }
 

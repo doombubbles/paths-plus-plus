@@ -7,6 +7,7 @@ using BTD_Mod_Helper.Api.Towers;
 using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Behaviors;
+using Il2CppAssets.Scripts.Models.TowerSets;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity;
 using MelonLoader;
@@ -138,7 +139,7 @@ public abstract class PathPlusPlus : ModContent
         else
         {
             if (!PathsPlusPlusMod.PathsByTower.TryGetValue(Tower, out var list))
-                list = PathsPlusPlusMod.PathsByTower[Tower] = new List<PathPlusPlus>();
+                list = PathsPlusPlusMod.PathsByTower[Tower] = [];
             Path = 3 + list.Count;
             list.Add(this);
         }

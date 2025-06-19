@@ -40,10 +40,10 @@ internal static class TowerSelectionMenu_Show
 internal static class TowerSelectionMenu_SelectTower
 {
     [HarmonyPostfix]
-    private static void Postfix(TowerSelectionMenu __instance, TowerToSimulation tower)
+    private static void Postfix(TowerSelectionMenu __instance, TowerToSimulation? tower)
     {
         var controller = __instance.GetComponentInChildren<PathsPlusPlusController>(false);
-        if (controller != null)
+        if (controller != null && tower is {Def: not null})
         {
             controller.SetMode(PathsPlusPlusMod.PathsByTower.ContainsKey(tower.Def.baseId));
         }
@@ -235,6 +235,8 @@ internal class UpgradeObject_CheckBlockedPath
         var tiers = tower.GetAllTiers();
         var thisTier = tiers[path];
 
+        var paths = PathsPlusPlusMod.PathsByTower.GetValueOrDefault(tower.towerModel.baseId, []);
+
         for (var i = thisTier; i <= max; i++)
         {
             __result = i;
@@ -245,7 +247,8 @@ internal class UpgradeObject_CheckBlockedPath
             }
             else
             {
-                if (!PathPlusPlus.DefaultValidTiers(tiers.ToArray())) break;
+                if (!PathPlusPlus.DefaultValidTiers(tiers.Take(3).ToArray()) ||
+                    paths.Any(p => !p.ValidTiers(tiers.ToArray()))) break;
             }
         }
 
