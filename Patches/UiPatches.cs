@@ -5,6 +5,7 @@ using System.Reflection;
 using BTD_Mod_Helper;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
+using Il2Cpp;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity.Bridge;
@@ -103,7 +104,7 @@ internal static class UpgradeObject_LoadUpgrades
             }
 
             upgradeButton.SetUpgradeModel(upgradeModel);
-            upgradeButton.UpdateVisuals(__instance.path, false);
+            upgradeButton.UpdateVisuals(__instance.path, upgradeModel.tier + 1, false);
         }
 
         if (__instance.tier > 0 && (__instance.path > 2 || __instance.tier > 5))
@@ -194,8 +195,8 @@ internal static class Tower_GetUpgrade
             if (path < 3 && tier < 5) return true;
 
             __result = tier < thisPath.UpgradeCount
-                ? __instance.Sim.model.GetUpgrade(thisPath.Upgrades[tier]!.Id)
-                : null;
+                           ? __instance.Sim.model.GetUpgrade(thisPath.Upgrades[tier]!.Id)
+                           : null;
 
             return false;
         }
@@ -387,7 +388,7 @@ internal static class UpgradeObject_UpdateVisuals
         var maxTierRestricted = __instance.CheckRestrictedPath();
         __instance.SetTier(__instance.tier, maxTier, maxTierRestricted);
         __instance.currentUpgrade.UpdateVisuals();
-        __instance.upgradeButton.UpdateVisuals(path, upgradeClicked);
+        __instance.upgradeButton.UpdateVisuals(path, __instance.tier, upgradeClicked);
 
         return false;
     }

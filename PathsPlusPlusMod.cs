@@ -6,9 +6,11 @@ using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Api.ModOptions;
 using BTD_Mod_Helper.Extensions;
+using HarmonyLib;
 using Il2CppAssets.Scripts.Models;
 using Il2CppAssets.Scripts.Models.Profile;
 using Il2CppAssets.Scripts.Models.TowerSets;
+using Il2CppAssets.Scripts.Simulation;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 using MelonLoader;
@@ -116,12 +118,12 @@ public class PathsPlusPlusMod : BloonsTD6Mod
 
     internal static readonly Dictionary<int, ModSettingHotkey> HotKeysByPath = new()
     {
-        { 3, UpgradePath4 },
-        { 4, UpgradePath5 },
-        { 5, UpgradePath6 },
-        { 6, UpgradePath7 },
-        { 7, UpgradePath8 },
-        { 8, UpgradePath9 },
+        {3, UpgradePath4},
+        {4, UpgradePath5},
+        {5, UpgradePath6},
+        {6, UpgradePath7},
+        {7, UpgradePath8},
+        {8, UpgradePath9},
     };
 
     #endregion
@@ -138,6 +140,7 @@ public class PathsPlusPlusMod : BloonsTD6Mod
     /// <inheritdoc />
     public override void OnNewGameModel(GameModel gameModel)
     {
+        Clipboard.Clear();
         foreach (var towerDetails in gameModel.towerSet.OfIl2CppType<ShopTowerDetailsModel>())
         {
             if (ExtendedPathsByTower.TryGetValue(towerDetails.towerId, out var paths))
@@ -204,4 +207,39 @@ public class PathsPlusPlusMod : BloonsTD6Mod
 
     /// <inheritdoc />
     public override void PostCleanProfile(ProfileModel profile) => OnProfileLoaded(profile);
+
+    private static readonly Dictionary<PathPlusPlus, int> Clipboard = new();
+
+    /// <inheritdoc />
+    public override object Call(string operation, params object[] parameters)
+    {
+        switch (operation)
+        {
+            case "OnTowerCopied" when parameters.CheckTypes(out Tower towerCopied):
+                Clipboard.Clear();
+                foreach (var path in PathsById.Values)
+                {
+                    if (path.GetTier(towerCopied) is var tier and > 0)
+                    {
+                        Clipboard[path] = tier;
+                    }
+                }
+
+                break;
+            case "OnTowerPasted" when parameters.CheckTypes(out Tower towerPasted):
+                foreach (var (path, tier) in Clipboard)
+                {
+                    path.SetTier(towerPasted, tier);
+                }
+
+                break;
+            case "OnClipboardCleared":
+                Clipboard.Clear();
+                break;
+            case "GetPathIds":
+                return PathsById.Keys;
+        }
+
+        return base.Call(operation, parameters);
+    }
 }

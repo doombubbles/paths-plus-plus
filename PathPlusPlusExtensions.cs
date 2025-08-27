@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using BTD_Mod_Helper;
+using BTD_Mod_Helper.Api;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Simulation.Towers;
 
@@ -30,6 +31,31 @@ public static class PathPlusPlusExtensions
         PathPlusPlus.TryGetPath(tower.towerModel.baseId, path, out var pathPlusPlus)
             ? pathPlusPlus.GetTier(tower)
             : 0;
+
+    /// <summary>
+    /// Gets what tier a tower is for a given path
+    /// </summary>
+    /// <param name="tower">The tower</param>
+    /// <param name="path">The PathsPlusPlus</param>
+    /// <returns></returns>
+    public static int GetTier(this Tower tower, PathPlusPlus path) => path.GetTier(tower);
+
+    /// <summary>
+    /// Gets what tier a tower is for a given path
+    /// </summary>
+    /// <typeparam name="T">The PathsPlusPlus</typeparam>
+    /// <returns></returns>
+    public static int GetTier<T>(this Tower tower) where T : PathPlusPlus =>
+        GetTier(tower, ModContent.GetInstance<T>());
+
+    /// <summary>
+    /// Gets whether a tower has a specific UpgradePlusPlus applied to it
+    /// </summary>
+    /// <param name="tower">The tower</param>
+    /// <typeparam name="T">The UpgradePlusPlus</typeparam>
+    /// <returns></returns>
+    public static bool HasUpgrade<T>(this Tower tower) where T : UpgradePlusPlus =>
+        tower.towerModel.appliedUpgrades.Contains(ModContent.GetInstance<T>().Id);
 
     /// <summary>
     /// Gets all PathPlusPlus tiers for this tower. Only includes PathPlusPlus(s) that apply to the base tower.

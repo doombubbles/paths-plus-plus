@@ -7,22 +7,20 @@ using UnityEngine;
 namespace PathsPlusPlus;
 
 [RegisterTypeInIl2Cpp(false)]
-internal class PopUpFixer : MonoBehaviour
+internal class PopUpFixer(IntPtr ptr) : MonoBehaviour(ptr)
 {
-    public PopUpFixer(IntPtr ptr) : base(ptr)
-    {
-    }
+    public GameObject upgradeObj = null!;
 
     private void LateUpdate()
     {
         try
         {
             var popup = GetComponent<UpgradeInfoPopup>();
-            if (popup == null) return;
+            if (popup == null || upgradeObj == null) return;
             var t = popup.transform;
             t.position = t.position with
             {
-                y = popup.upgradeObj.transform.position.y
+                y = upgradeObj.transform.position.y
             };
         }
         catch (Exception e)

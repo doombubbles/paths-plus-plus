@@ -182,6 +182,15 @@ public abstract class UpgradePlusPlus : NamedModContent
     public virtual void OnUpgraded(Tower tower)
     {
     }
+
+    /// <summary>
+    /// Runs in game when this upgrade is attached to a Tower, whether by having just purchased the upgrade or the tower being loaded from save, etc
+    /// Note that this may apply to a tower multiple times
+    /// </summary>
+    /// <param name="tower">The tower getting the upgrade</param>
+    public virtual void OnAttached(Tower tower)
+    {
+    }
 }
 
 /// <inheritdoc />

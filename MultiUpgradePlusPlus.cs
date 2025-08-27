@@ -17,7 +17,7 @@ public abstract class MultiUpgradePlusPlus : UpgradePlusPlus
     private string tower = null!;
     
     /// <summary>
-    /// The tower that this instance of the MultuUpgradePlusPlus is specifically for
+    /// The tower that this instance of the MultiUpgradePlusPlus is specifically for
     /// </summary>
     /// <exception cref="ArgumentException"></exception>
     public string Tower =>

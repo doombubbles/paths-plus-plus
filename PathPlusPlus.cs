@@ -109,7 +109,7 @@ public abstract class PathPlusPlus : ModContent
         // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
         Override ??= PathsPlusPlusMod.Preferences.CreateEntry(Id, false);
         PathsPlusPlusMod.PathsById[Id] = this;
-        
+
         AssignPath();
 
         foreach (var upgrade in Upgrades.Values)
@@ -155,6 +155,16 @@ public abstract class PathPlusPlus : ModContent
     }
 
     /// <summary>
+    /// Runs in game when one of the Upgrades of this path is attached to a Tower, whether by having just purchased the upgrade or the tower being loaded from save, etc
+    /// Note that this may apply to a tower multiple times
+    /// </summary>
+    /// <param name="tower">The tower receiving the upgrade</param>
+    /// <param name="tier">The tier of the upgrade</param>
+    public virtual void OnAttached(Tower tower, int tier)
+    {
+    }
+
+    /// <summary>
     /// The Priority given to the PathPlusPlus mutator on the tower
     /// </summary>
     protected virtual int Priority => 100 - Order;
@@ -187,7 +197,7 @@ public abstract class PathPlusPlus : ModContent
     /// </summary>
     /// <param name="tower"></param>
     /// <returns></returns>
-    public int GetTier(Tower tower)
+    public virtual int GetTier(Tower tower)
     {
         var mutatorById = tower.GetMutatorById(Id);
         if (mutatorById == null || !mutatorById.mutator.Is(out RateSupportModel.RateSupportMutator mutator))
@@ -208,7 +218,17 @@ public abstract class PathPlusPlus : ModContent
     {
         tower.RemoveMutatorsById(Id);
         tower.AddMutator(new RateSupportModel.RateSupportMutator(true, Id, tier, Priority, null));
-        if (onUpgrade && Upgrades[tier - 1] is UpgradePlusPlus upgrade)
+
+        for (var i = 0; i < tier; i++)
+        {
+            if (Upgrades.TryGetValue(i, out var u))
+            {
+                OnAttached(tower, tier);
+                u.OnAttached(tower);
+            }
+        }
+
+        if (onUpgrade && Upgrades.TryGetValue(tier - 1, out var upgrade))
         {
             OnUpgraded(tower, tier);
             upgrade.OnUpgraded(tower);

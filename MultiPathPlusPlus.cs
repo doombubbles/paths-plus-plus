@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using BTD_Mod_Helper.Api;
+using Il2CppAssets.Scripts.Simulation.Towers;
 
 namespace PathsPlusPlus;
 
@@ -37,4 +38,8 @@ public abstract class MultiPathPlusPlus : PathPlusPlus
         PathsByTower[t] = path;
         return path;
     });
+
+    /// <inheritdoc />
+    public override int GetTier(Tower t) =>
+        !PathsByTower.TryGetValue(t.towerModel.baseId, out var path) ? 0 : path.GetTier(t);
 }
