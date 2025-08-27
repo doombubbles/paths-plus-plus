@@ -109,8 +109,8 @@ internal static class UpgradeObject_LoadUpgrades
 
         if (__instance.tier > 0 && (__instance.path > 2 || __instance.tier > 5))
         {
-            var currentUpgradeModel = InGame.Bridge.Model.GetUpgrade(path.Upgrades[__instance.tier - 1].Id);
-            __instance.currentUpgrade.SetUpgradeModel(currentUpgradeModel, __instance.tts);
+            __instance.currentUpgradeModel = InGame.Bridge.Model.GetUpgrade(path.Upgrades[__instance.tier - 1].Id);
+            __instance.currentUpgrade.SetUpgradeModel(__instance.currentUpgradeModel, __instance.tts);
         }
     }
 }
@@ -370,7 +370,7 @@ internal static class UpgradeObject_SetTier
 /// <summary>
 /// Fix v38.1 inlining of TowerSelectionMenu.IsUpgradePathClosed method
 /// </summary>
-[HarmonyPatch(typeof(UpgradeObject), nameof(UpgradeObject.UpdateVisuals))]
+/*[HarmonyPatch(typeof(UpgradeObject), nameof(UpgradeObject.UpdateVisuals))]
 internal static class UpgradeObject_UpdateVisuals
 {
     [HarmonyPrefix]
@@ -383,16 +383,15 @@ internal static class UpgradeObject_UpdateVisuals
             __instance.upgradeButton.SetUpgradeModel(null);
         }
 
-        __instance.CheckLocked();
+            __instance.CheckLocked();
         var maxTier = __instance.CheckBlockedPath();
         var maxTierRestricted = __instance.CheckRestrictedPath();
         __instance.SetTier(__instance.tier, maxTier, maxTierRestricted);
         __instance.currentUpgrade.UpdateVisuals();
-        __instance.upgradeButton.UpdateVisuals(path, __instance.tier, upgradeClicked);
 
         return false;
     }
-}
+}*/
 
 [HarmonyPatch(typeof(UpgradeButton), nameof(UpgradeButton.OnPointerDown))]
 internal static class UpgradeButton_OnPointerDown

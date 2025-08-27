@@ -186,6 +186,7 @@ internal class PathsPlusPlusController : MonoBehaviour
         }
 
         menu.upgradeButtons = menu.upgradeButtons.Take(3).ToArray();
+        menu.upgradeInfoPopups = menu.upgradeInfoPopups.Take(3).ToArray();
 
         if (menu.selectedTower is not {hero: null, tower.towerModel.isParagon: false} tower) return;
 
@@ -217,25 +218,37 @@ internal class PathsPlusPlusController : MonoBehaviour
             }
         }
 
+        var popups = menu.transform.GetComponentsInChildren<PopUpFixer>(true);
+
         for (var i = 0; i < moreUpgradeButtons.Count; i++)
         {
             var button = moreUpgradeButtons.Get(i);
+            var popup = popups.First(fixer => fixer.upgradeObj == button.upgradeObject.gameObject)
+                .GetComponent<UpgradeInfoPopup>();
+
             if (i < list.Count)
             {
                 var path = list[i];
                 button.gameObject.SetActive(true);
                 button.upgradeObject.enabled = true;
                 button.InitForTower(tower, path.Id);
+
+                popup.enabled = true;
+                popup.gameObject.SetActive(true);
             }
             else
             {
                 button.upgradeObject.tts = null;
                 button.upgradeObject.enabled = false;
                 button.gameObject.SetActive(false);
+
+                popup.enabled = false;
+                popup.gameObject.SetActive(false);
             }
         }
 
         menu.upgradeButtons = menu.transform.GetComponentsInChildren<UpgradeObject>(false).ToArray();
+        menu.upgradeInfoPopups = menu.transform.GetComponentsInChildren<UpgradeInfoPopup>(false).ToArray();
 
         UpdateVisuals();
     }
