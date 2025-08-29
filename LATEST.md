@@ -1,1 +1,1 @@
-- Additional fixes for v50
+- Fixed Paths++ UI changes to not interfere with Powers Pro upgrades

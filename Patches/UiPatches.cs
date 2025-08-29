@@ -73,7 +73,7 @@ internal static class TowerSelectionMenu_InitUpgradeButtons
     {
         var controller = __instance.GetComponentInChildren<PathsPlusPlusController>();
 
-        if (controller != null)
+        if (controller != null && !__instance.powerProDetails.activeSelf)
         {
             controller.InitUpgradeButtons();
         }
@@ -89,7 +89,8 @@ internal static class UpgradeObject_LoadUpgrades
     [HarmonyPostfix]
     private static void Postfix(UpgradeObject __instance)
     {
-        if (!__instance.gameObject.HasComponent(out UpgradeObjectPlusPlus upgradeObj) ||
+        if (__instance.Is<PowerProUpgradeObject>() ||
+            !__instance.gameObject.HasComponent(out UpgradeObjectPlusPlus upgradeObj) ||
             upgradeObj.GetPath() is not { } path ||
             !upgradeObj.IsExtra) return;
 
@@ -215,6 +216,7 @@ internal class UpgradeObject_CheckBlockedPath
     private static bool Prefix(UpgradeObject __instance, ref int __result)
     {
         if (!__instance.isActiveAndEnabled) return false;
+        if (__instance.Is<PowerProUpgradeObject>()) return true;
 
         var tower = __instance.towerSelectionMenu.selectedTower.tower;
         var path = __instance.path;
@@ -330,6 +332,8 @@ internal static class UpgradeObject_SetTier
     [HarmonyPrefix]
     private static void Prefix(UpgradeObject __instance, ref int tier, ref int maxTier, ref int maxTierRestricted)
     {
+        if (__instance.Is<PowerProUpgradeObject>()) return;
+
         var tiers = __instance.tiers.ToList();
         var baseTier = tiers[0]!;
 
@@ -366,32 +370,6 @@ internal static class UpgradeObject_SetTier
         }
     }
 }
-
-/// <summary>
-/// Fix v38.1 inlining of TowerSelectionMenu.IsUpgradePathClosed method
-/// </summary>
-/*[HarmonyPatch(typeof(UpgradeObject), nameof(UpgradeObject.UpdateVisuals))]
-internal static class UpgradeObject_UpdateVisuals
-{
-    [HarmonyPrefix]
-    private static bool Prefix(UpgradeObject __instance, int path, bool upgradeClicked)
-    {
-        if (ModHelper.HasMod("UltimateCrosspathing")) return false;
-
-        if (__instance.towerSelectionMenu.IsUpgradePathClosed(path))
-        {
-            __instance.upgradeButton.SetUpgradeModel(null);
-        }
-
-            __instance.CheckLocked();
-        var maxTier = __instance.CheckBlockedPath();
-        var maxTierRestricted = __instance.CheckRestrictedPath();
-        __instance.SetTier(__instance.tier, maxTier, maxTierRestricted);
-        __instance.currentUpgrade.UpdateVisuals();
-
-        return false;
-    }
-}*/
 
 [HarmonyPatch(typeof(UpgradeButton), nameof(UpgradeButton.OnPointerDown))]
 internal static class UpgradeButton_OnPointerDown
