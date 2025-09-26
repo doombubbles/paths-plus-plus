@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using BTD_Mod_Helper;
 using BTD_Mod_Helper.Api;
+using BTD_Mod_Helper.Api.ModOptions;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Towers;
@@ -16,6 +18,8 @@ public abstract class UpgradePlusPlus : NamedModContent
 {
     /// <inheritdoc />
     protected sealed override float RegistrationPriority => 10f;
+
+    internal readonly HashSet<Tower> currentlyAppliedOn = [];
 
     /// <summary>
     /// The PathPlusPlus this upgrade is a part of
@@ -43,7 +47,7 @@ public abstract class UpgradePlusPlus : NamedModContent
     public virtual bool Ability => false;
 
     /// <summary>
-    /// What tier this upgrade is, from 1 to 5
+    /// What tier this upgrade is
     /// </summary>
     public abstract int Tier { get; }
 
@@ -53,11 +57,24 @@ public abstract class UpgradePlusPlus : NamedModContent
     public virtual string? Portrait => null;
 
     /// <summary>
+    /// The maximum number of times this upgrade can be used on towers in a game at any one time
+    /// <br/>
+    /// -1 for unlimited
+    /// </summary>
+    public virtual int MaxAtOnce =>
+        Tier >= 5 &&
+        !(ModHelper.HasMod("Unlimited5thTiers", out var u) &&
+          u.ModSettings.TryGetValue("AllowUnlimited5thTiers", out var setting) &&
+          setting is ModSettingBool value && value)
+            ? 1
+            : 999999999;
+
+    /// <summary>
     /// Sprite reference for the portrait
     /// </summary>
     public virtual SpriteReference? PortraitReference => string.IsNullOrEmpty(Portrait)
-        ? GetSpriteReferenceOrNull(Path.Name)
-        : GetSpriteReferenceOrDefault(Portrait);
+                                                             ? GetSpriteReferenceOrNull(Path.Name)
+                                                             : GetSpriteReferenceOrDefault(Portrait);
 
     /// <summary>
     /// Override the texture to use for the container for the upgrade in the upgrades screen
@@ -144,7 +161,7 @@ public abstract class UpgradePlusPlus : NamedModContent
     /// </summary>
     /// <returns></returns>
     public UpgradeModel GetUpgradeModel() => upgradeModel ??= new UpgradeModel(Id, Cost, 0, IconReference, Path.Path,
-        Tier - 1, 0, NeedsConfirmation ? Id : "", "");
+                                                 Tier - 1, 0, NeedsConfirmation ? Id : "", "");
 
     /// <summary>
     /// Returns whether this Upgrade is of a higher tier than any other base or PathsPlusPlus upgrade that the tower has

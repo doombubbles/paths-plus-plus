@@ -94,7 +94,9 @@ internal static class UpgradeObject_LoadUpgrades
             upgradeObj.GetPath() is not { } path ||
             !upgradeObj.IsExtra) return;
 
-        if (__instance.tier < path.UpgradeCount)
+        var tower = __instance.towerSelectionMenu.selectedTower.tower;
+
+        if (__instance.tier < path.UpgradeCount && !InGame.Bridge.IsUpgradeLocked(tower.Id, __instance.path, __instance.tier + 1))
         {
             var upgradeButton = __instance.upgradeButton;
             var upgradeModel = InGame.Bridge.Model.GetUpgrade(path.Upgrades[__instance.tier].Id);

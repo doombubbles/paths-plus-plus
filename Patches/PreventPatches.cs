@@ -7,7 +7,6 @@ using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Simulation.Towers.Behaviors;
 using Il2CppAssets.Scripts.Unity.Bridge;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
-using Il2CppAssets.Scripts.Unity.UI_New.Upgrade;
 
 namespace PathsPlusPlus.Patches;
 
@@ -51,7 +50,7 @@ internal static class UpgradeButton_IsUpgradeBlocked
     [HarmonyPrefix]
     private static bool Prefix(UpgradeButton __instance, ref string? __result)
     {
-        if (__instance.upgrade == null || __instance.upgrade.path < 3) return true;
+        if (__instance.row < 3) return true;
 
         __result = null;
         return false;
@@ -102,11 +101,15 @@ internal static class UpgradeObject_CheckRestrictedPath
 internal static class TowerManager_IsTowerPathTierLocked
 {
     [HarmonyPrefix]
-    private static bool Prefix(int path, ref bool __result)
+    private static bool Prefix(Tower tower, int path, int tier, ref bool __result)
     {
         if (path < 3) return true;
 
-        __result = false;
+        __result = PathsPlusPlusMod.PathsByTower.TryGetValue(tower.towerModel.baseId, out var paths) &&
+                   paths.FirstOrDefault(plus => plus.Path == path) is { } pathPlusPlus &&
+                   pathPlusPlus.Upgrades.TryGetValue(tier - 1, out var upgrade)
+                   && upgrade.currentlyAppliedOn.Count >= upgrade.MaxAtOnce;
+
         return false;
     }
 }
@@ -187,11 +190,33 @@ internal static class BeastHandlerUpgradeLock_IsUpgradeBlocked
     }
 }
 
-[HarmonyPatch(typeof(UpgradeDetails), nameof(UpgradeDetails.OnPointerExit))]
-internal static class UpgradeDetails_OnPointerExit
+[HarmonyPatch(typeof(UpgradeButton), nameof(UpgradeButton.UpdateMergeButton))]
+internal static class UpgradeButton_UpdateMergeButton
 {
-    [HarmonyPostfix]
-    private static void Postfix(UpgradeDetails __instance)
+    [HarmonyPrefix]
+    internal static bool Prefix(UpgradeButton __instance)
     {
+        return __instance.row < 3;
+    }
+}
+
+[HarmonyPatch(typeof(UpgradeButton), nameof(UpgradeButton.IsBeastHandlerContributionUpgradeAvailable),
+    MethodType.Getter)]
+internal static class UpgradeButton_IsBeastHandlerContributionUpgradeAvailable
+{
+    [HarmonyPrefix]
+    internal static bool Prefix(UpgradeButton __instance)
+    {
+        return __instance.row < 3;
+    }
+}
+
+[HarmonyPatch(typeof(CurrentUpgrade), nameof(CurrentUpgrade.UpdateBeastHandlerDisplay))]
+internal static class CurrentUpgrade_UpdateBeastHandlerDisplay
+{
+    [HarmonyPrefix]
+    internal static bool Prefix(CurrentUpgrade __instance)
+    {
+        return __instance.row < 3;
     }
 }

@@ -1,1 +1,3 @@
-- Fixed Paths++ UI changes to not interfere with Powers Pro upgrades
+- UpgradePlusPlus now has a `MaxAtOnce` to control how many of that upgrade can be purchased on different towers at the same time
+  - Default is 1 for Tier 5+ upgrades (unless Unlimited5thTiers+ mod is installed), unlimited for other tiers
+- Added some more patches to prevent Beast Handler extra paths from breaking

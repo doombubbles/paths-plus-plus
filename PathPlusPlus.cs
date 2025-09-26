@@ -65,7 +65,7 @@ public abstract class PathPlusPlus : ModContent
     /// <summary>
     /// The UpgradePlusPlus(s) for this path
     /// </summary>
-    public readonly SortedDictionary<int, UpgradePlusPlus> Upgrades = new();
+    public readonly SortedDictionary<int, UpgradePlusPlus> Upgrades = [];
 
     /// <summary>
     /// Whether this path should appear in the Upgrades Screen for the tower
@@ -217,7 +217,10 @@ public abstract class PathPlusPlus : ModContent
     public void SetTier(Tower tower, int tier, bool onUpgrade = false)
     {
         tower.RemoveMutatorsById(Id);
-        tower.AddMutator(new RateSupportModel.RateSupportMutator(true, Id, tier, Priority, null));
+        tower.AddMutator(new RateSupportModel.RateSupportMutator(true, Id, tier, Priority, null)
+        {
+            cantBeAbsorbed = true
+        });
 
         for (var i = 0; i < tier; i++)
         {
@@ -225,6 +228,7 @@ public abstract class PathPlusPlus : ModContent
             {
                 OnAttached(tower, tier);
                 u.OnAttached(tower);
+                u.currentlyAppliedOn.Add(tower);
             }
         }
 

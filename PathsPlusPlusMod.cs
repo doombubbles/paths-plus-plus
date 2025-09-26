@@ -16,6 +16,7 @@ using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 using MelonLoader;
 using PathsPlusPlus;
 using UnityEngine;
+
 [assembly: MelonInfo(typeof(PathsPlusPlusMod), ModHelperData.Name, ModHelperData.Version, ModHelperData.RepoOwner)]
 [assembly: MelonGame("Ninja Kiwi", "BloonsTD6")]
 
@@ -209,6 +210,24 @@ public class PathsPlusPlusMod : BloonsTD6Mod
     public override void PostCleanProfile(ProfileModel profile) => OnProfileLoaded(profile);
 
     private static readonly Dictionary<PathPlusPlus, int> Clipboard = new();
+
+    /// <inheritdoc />
+    public override void OnTowerDestroyed(Tower tower)
+    {
+        foreach (var upgradePlusPlus in ModContent.GetContent<UpgradePlusPlus>())
+        {
+            upgradePlusPlus.currentlyAppliedOn.Remove(tower);
+        }
+    }
+
+    /// <inheritdoc />
+    public override void OnGameObjectsReset()
+    {
+        foreach (var upgradePlusPlus in ModContent.GetContent<UpgradePlusPlus>())
+        {
+            upgradePlusPlus.currentlyAppliedOn.Clear();
+        }
+    }
 
     /// <inheritdoc />
     public override object Call(string operation, params object[] parameters)
