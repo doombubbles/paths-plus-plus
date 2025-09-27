@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using BTD_Mod_Helper;
 using HarmonyLib;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Input;
@@ -103,7 +104,7 @@ internal static class TowerManager_IsTowerPathTierLocked
     [HarmonyPrefix]
     private static bool Prefix(Tower tower, int path, int tier, ref bool __result)
     {
-        if (path < 3) return true;
+        if (path < 3 && tier <= 5) return true;
 
         __result = PathsPlusPlusMod.PathsByTower.TryGetValue(tower.towerModel.baseId, out var paths) &&
                    paths.FirstOrDefault(plus => plus.Path == path) is { } pathPlusPlus &&
