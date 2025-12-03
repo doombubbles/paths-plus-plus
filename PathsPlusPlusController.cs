@@ -69,6 +69,8 @@ internal class PathsPlusPlusController : MonoBehaviour
         scrollRect.viewport = viewport;
         scrollRect.horizontal = false;
         scrollRect.scrollSensitivity = 165;
+        scrollRect.inertia = false;
+        scrollRect.movementType = ScrollRect.MovementType.Clamped;
 
         foreach (var menuUpgradeButton in menu.upgradeButtons)
         {

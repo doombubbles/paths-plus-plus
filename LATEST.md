@@ -1,1 +1,1 @@
-- Fixed for v52
+- Fixed a buggy interaction with the Desperado Legends Sheriff upgrades UI

@@ -57,6 +57,8 @@ internal static class TowerSelectionMenu_InitUpgradeButtons
     [HarmonyPrefix]
     private static void Prefix(TowerSelectionMenu __instance)
     {
+        if (__instance.sheriffDetails != null && __instance.sheriffDetails.active) return;
+
         foreach (var upgradeButton in __instance.upgradeButtons)
         {
             if (upgradeButton.gameObject.HasComponent(out UpgradeObjectPlusPlus button))
@@ -85,6 +87,8 @@ internal static class TowerSelectionMenu_InitUpgradeButtons
     [HarmonyPostfix]
     private static void Postfix(TowerSelectionMenu __instance)
     {
+        if (__instance.sheriffDetails != null && __instance.sheriffDetails.active) return;
+
         var controller = __instance.GetComponentInChildren<PathsPlusPlusController>();
 
         if (controller != null && !__instance.powerProDetails.activeSelf)
