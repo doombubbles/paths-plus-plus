@@ -44,7 +44,7 @@ internal static class TowerSelectionMenu_SelectTower
     private static void Postfix(TowerSelectionMenu __instance, TowerToSimulation? tower)
     {
         var controller = __instance.GetComponentInChildren<PathsPlusPlusController>(false);
-        if (controller != null && tower is {Def: not null})
+        if (controller != null && tower is { Def: not null })
         {
             controller.SetMode(PathsPlusPlusMod.PathsByTower.ContainsKey(tower.Def.baseId));
         }
@@ -65,6 +65,20 @@ internal static class TowerSelectionMenu_InitUpgradeButtons
             }
 
             upgradeButton.tier = 0;
+        }
+
+        if (__instance.upgradeButtons.Length > 3)
+        {
+            foreach (var upgradeObject in __instance.upgradeButtons.Skip(3))
+            {
+                upgradeObject.gameObject.SetActive(false);
+            }
+            __instance.upgradeButtons = __instance.upgradeButtons.Take(3).ToArray();
+        }
+
+        if (__instance.upgradeInfoPopups.Length > 3)
+        {
+            __instance.upgradeInfoPopups = __instance.upgradeInfoPopups.Take(3).ToArray();
         }
     }
 
@@ -96,7 +110,8 @@ internal static class UpgradeObject_LoadUpgrades
 
         var tower = __instance.towerSelectionMenu.selectedTower.tower;
 
-        if (__instance.tier < path.UpgradeCount && !InGame.Bridge.IsUpgradeLocked(tower.Id, __instance.path, __instance.tier + 1))
+        if (__instance.tier < path.UpgradeCount &&
+            !InGame.Bridge.IsUpgradeLocked(tower.Id, __instance.path, __instance.tier + 1))
         {
             var upgradeButton = __instance.upgradeButton;
             var upgradeModel = InGame.Bridge.Model.GetUpgrade(path.Upgrades[__instance.tier].Id);
@@ -121,8 +136,8 @@ internal static class UpgradeObject_LoadUpgrades
 /// <summary>
 /// Make each UpgradePlusPlus update alongside the others
 /// </summary>
-[HarmonyPatch(typeof(TowerSelectionMenu), nameof(TowerSelectionMenu.UpdateUpgradeVisuals))]
-internal static class TowerSelectionMenu_UpdateUpgradeVisuals
+[HarmonyPatch(typeof(TowerSelectionMenu), nameof(TowerSelectionMenu.OnUpdateUpgradeVisuals))]
+internal static class TowerSelectionMenu_OnUpdateUpgradeVisuals
 {
     [HarmonyPostfix]
     private static void Postfix(TowerSelectionMenu __instance)
@@ -198,8 +213,8 @@ internal static class Tower_GetUpgrade
             if (path < 3 && tier < 5) return true;
 
             __result = tier < thisPath.UpgradeCount
-                           ? __instance.Sim.model.GetUpgrade(thisPath.Upgrades[tier]!.Id)
-                           : null;
+                ? __instance.Sim.model.GetUpgrade(thisPath.Upgrades[tier]!.Id)
+                : null;
 
             return false;
         }
@@ -288,7 +303,7 @@ internal static class TowerSelectionMenu_DisplayClass_UpgradeTower
         {
             upgradeObject.tier = menu.selectedTower.tower.GetTier(path);
             upgradeObject.LoadUpgrades();
-            menu.UpdateUpgradeVisuals();
+            menu.OnUpdateUpgradeVisuals();
         }
 
         upgradeObject.PostSimUpgrade();

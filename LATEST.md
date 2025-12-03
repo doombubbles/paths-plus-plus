@@ -1,1 +1,1 @@
-- Fixed a visual bug that could prevent buying Tier 6+ upgrades in the main 3 paths
+- Fixed for v52
