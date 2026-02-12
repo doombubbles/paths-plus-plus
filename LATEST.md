@@ -1,1 +1,2 @@
-- Fixed a buggy interaction with the Desperado Legends Sheriff upgrades UI
+- Fixed for BTD6 v53
+- Some internal reworking to better support Useful Utilities upgrade queueing

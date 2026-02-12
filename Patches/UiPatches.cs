@@ -316,36 +316,6 @@ internal static class TowerSelectionMenu_DisplayClass_UpgradeTower
     }
 }
 
-/// <summary>
-/// Fix discounts and cost rounding for the upgrades
-/// </summary>
-[HarmonyPatch(typeof(TowerManager), nameof(TowerManager.GetTowerUpgradeCost))]
-internal static class TowerManager_GetTowerUpgradeCost
-{
-    private static void Prefix(Tower? tower, int path, int tier, ref Il2CppReferenceArray<UpgradePathModel>? __state)
-    {
-        if (tower?.towerModel?.Is(out var towerModel) != true ||
-            (tier <= 5 && path < 3) ||
-            path < 0 ||
-            !PathPlusPlus.TryGetPath(towerModel.baseId, path, out var pathPlusPlus)) return;
-
-        __state = towerModel.upgrades;
-        towerModel.upgrades = new[]
-        {
-            new UpgradePathModel(pathPlusPlus.Upgrades[tier - 1]!.Id, towerModel.name)
-        };
-    }
-
-    [HarmonyPostfix]
-    private static void Postfix(Tower tower, ref Il2CppReferenceArray<UpgradePathModel>? __state)
-    {
-        if (__state != null)
-        {
-            tower.towerModel.upgrades = __state;
-        }
-    }
-}
-
 // Adding extra upgrade pips
 [HarmonyPatch(typeof(UpgradeObject), nameof(UpgradeObject.SetTier), typeof(int), typeof(int), typeof(int))]
 internal static class UpgradeObject_SetTier

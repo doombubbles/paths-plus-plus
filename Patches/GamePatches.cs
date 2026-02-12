@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
 using Il2CppAssets.Scripts;
@@ -6,9 +7,10 @@ using Il2CppAssets.Scripts.Models;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Behaviors;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
+using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity.Bridge;
-using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 
 namespace PathsPlusPlus.Patches;
 
@@ -39,26 +41,26 @@ internal static class RateMutator_Mutate
 [HarmonyPatch(typeof(UnityToSimulation), nameof(UnityToSimulation.UpgradeTower_Impl))]
 internal static class UnityToSimulation_UpgradeTower_Impl
 {
-    internal static UpgradeModel? current;
-    internal static double cash;
-
     [HarmonyPrefix]
-    private static bool Prefix(UnityToSimulation __instance, ObjectId id, int pathIndex, int callbackId, int inputId)
+    private static bool Prefix(UnityToSimulation __instance, ObjectId id, int pathIndex, int callbackId, int inputId,
+        double nonUpgradeCashInvestment)
     {
-        if (current == null || !PathsPlusPlusMod.UpgradesById.ContainsKey(current.name)) return true;
-
-        var action = __instance.UnregisterCallback(callbackId, inputId);
         var towerManager = __instance.simulation.towerManager;
         var tower = towerManager.GetTowerById(id);
+        var tiers = tower.GetAllTiers();
 
-        var cost = towerManager.GetTowerUpgradeCost(tower, pathIndex, current.tier + 1, current.cost);
+        var tier = tiers[pathIndex] + 1;
 
-        // Perform normal upgrade affects
-        towerManager.UpgradeTower(inputId, tower, tower.rootModel.Cast<TowerModel>(), 0, cost);
-        InGame.instance.SetCash(cash - cost);
+        if (pathIndex < 3 && tier <= 5) return true;
 
-        // Apply the upgrade
-        tower.SetTier(pathIndex, current.tier + 1, true);
+        var action = __instance.UnregisterCallback(callbackId, inputId);
+        var cost = 99999999f;
+
+        if (towerManager.CanUpgradeTower(tower, pathIndex, tier, inputId, ref cost))
+        {
+            towerManager.UpgradeTower(inputId, tower, tower.rootModel.Cast<TowerModel>(), pathIndex, cost,
+                nonUpgradeCashInvestment: nonUpgradeCashInvestment);
+        }
 
         if (action != null)
         {
@@ -66,20 +68,78 @@ internal static class UnityToSimulation_UpgradeTower_Impl
         }
 
         UpgradeButton.upgradeCashOffset = 0;
-        current = null;
-
         return false;
     }
 }
 
-[HarmonyPatch(typeof(TowerSelectionMenu), nameof(TowerSelectionMenu.UpgradeTower), typeof(UpgradeModel), typeof(int),
-    typeof(float), typeof(double))]
-internal static class TowerSelectionMenu_UpgradeTower
+/// <summary>
+/// Get correct upgrade cost for paths++ upgrades
+/// </summary>
+[HarmonyPatch(typeof(TowerManager), nameof(TowerManager.GetTowerUpgradeCost))]
+internal static class TowerManager_GetTowerUpgradeCost
+{
+    private static void Prefix(Tower? tower, int path, int tier, ref Il2CppReferenceArray<UpgradePathModel>? __state)
+    {
+        if (tower?.towerModel?.Is(out var towerModel) != true ||
+            (tier <= 5 && path < 3) ||
+            path < 0 ||
+            !PathPlusPlus.TryGetPath(towerModel.baseId, path, out var pathPlusPlus)) return;
+
+        __state = towerModel.upgrades;
+        towerModel.upgrades = new[]
+        {
+            new UpgradePathModel(pathPlusPlus.Upgrades[tier - 1]!.Id, towerModel.name)
+        };
+    }
+
+    [HarmonyPostfix]
+    private static void Postfix(Tower tower, ref Il2CppReferenceArray<UpgradePathModel>? __state)
+    {
+        if (__state != null)
+        {
+            tower.towerModel.upgrades = __state;
+        }
+    }
+}
+
+/// <summary>
+/// Apply real path++ upgrade if applicable
+/// </summary>
+[HarmonyPatch(typeof(TowerManager), nameof(TowerManager.UpgradeTower))]
+internal static class TowerManager_UpgradeTower
+{
+    [HarmonyPostfix]
+    internal static void Postfix(Tower tower, int pathIndex)
+    {
+        var tiers = tower.GetAllTiers();
+        if (pathIndex < 0 || pathIndex >= tiers.Count) return;
+        var tier = tiers[pathIndex] + 1;
+        if (pathIndex < 3 && tier <= 5) return;
+
+        tower.SetTier(pathIndex, tier, true);
+    }
+}
+
+/// <summary>
+/// Check valid tiers
+/// </summary>
+[HarmonyPatch(typeof(TowerManager), nameof(TowerManager.IsTowerPathTierLocked))]
+internal static class TowerManager_IsTowerPathTierLocked
 {
     [HarmonyPrefix]
-    private static void Prefix(UpgradeModel upgrade)
+    private static bool Prefix(Tower tower, int path, int tier, ref bool __result)
     {
-        UnityToSimulation_UpgradeTower_Impl.current = upgrade;
-        UnityToSimulation_UpgradeTower_Impl.cash = InGame.instance.GetCash();
+        if (path < 3 && tier <= 5) return true;
+
+        var tiers = tower.GetAllTiers().ToArray();
+        tiers[path] = tier;
+
+        __result = PathsPlusPlusMod.PathsByTower.TryGetValue(tower.towerModel.baseId, out var paths) &&
+                   paths.FirstOrDefault(plus => plus.Path == path) is { } pathPlusPlus &&
+                   pathPlusPlus.Upgrades.TryGetValue(tier - 1, out var upgrade)
+                   && upgrade.currentlyAppliedOn.Count >= upgrade.MaxAtOnce &&
+                   pathPlusPlus.ValidTiers(tiers);
+
+        return false;
     }
 }

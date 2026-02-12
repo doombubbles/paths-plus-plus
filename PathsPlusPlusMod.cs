@@ -119,12 +119,12 @@ public class PathsPlusPlusMod : BloonsTD6Mod
 
     internal static readonly Dictionary<int, ModSettingHotkey> HotKeysByPath = new()
     {
-        {3, UpgradePath4},
-        {4, UpgradePath5},
-        {5, UpgradePath6},
-        {6, UpgradePath7},
-        {7, UpgradePath8},
-        {8, UpgradePath9},
+        { 3, UpgradePath4 },
+        { 4, UpgradePath5 },
+        { 5, UpgradePath6 },
+        { 6, UpgradePath7 },
+        { 7, UpgradePath8 },
+        { 8, UpgradePath9 },
     };
 
     #endregion
@@ -230,7 +230,7 @@ public class PathsPlusPlusMod : BloonsTD6Mod
     }
 
     /// <inheritdoc />
-    public override object Call(string operation, params object[] parameters)
+    public override object? Call(string operation, params object[] parameters)
     {
         switch (operation)
         {
@@ -257,6 +257,12 @@ public class PathsPlusPlusMod : BloonsTD6Mod
                 break;
             case "GetPathIds":
                 return PathsById.Keys;
+            case "GetTiers" when parameters.CheckTypes(out Tower tower):
+                return tower.GetAllTiers();
+            case "ValidTiers" when parameters.CheckTypes(out string towerId, out int path, out int[] tiers):
+                return !PathPlusPlus.TryGetPath(towerId, path, out var p) || p.ValidTiers(tiers);
+            case "GetUpgrade" when parameters.CheckTypes(out string towerId, out int path, out int tier):
+                return PathPlusPlus.GetPath(towerId, path)?.Upgrades.GetValueOrDefault(tier)?.Id;
         }
 
         return base.Call(operation, parameters);

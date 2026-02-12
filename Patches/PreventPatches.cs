@@ -6,6 +6,7 @@ using Il2CppAssets.Scripts.Simulation.Input;
 using Il2CppAssets.Scripts.Simulation.Objects;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Simulation.Towers.Behaviors;
+using Il2CppAssets.Scripts.Simulation.Tracking;
 using Il2CppAssets.Scripts.Unity.Bridge;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
 
@@ -94,23 +95,6 @@ internal static class UpgradeObject_CheckRestrictedPath
         if (__instance.path < 3) return true;
 
         __result = 5;
-        return false;
-    }
-}
-
-[HarmonyPatch(typeof(TowerManager), nameof(TowerManager.IsTowerPathTierLocked))]
-internal static class TowerManager_IsTowerPathTierLocked
-{
-    [HarmonyPrefix]
-    private static bool Prefix(Tower tower, int path, int tier, ref bool __result)
-    {
-        if (path < 3 && tier <= 5) return true;
-
-        __result = PathsPlusPlusMod.PathsByTower.TryGetValue(tower.towerModel.baseId, out var paths) &&
-                   paths.FirstOrDefault(plus => plus.Path == path) is { } pathPlusPlus &&
-                   pathPlusPlus.Upgrades.TryGetValue(tier - 1, out var upgrade)
-                   && upgrade.currentlyAppliedOn.Count >= upgrade.MaxAtOnce;
-
         return false;
     }
 }
@@ -219,5 +203,21 @@ internal static class CurrentUpgrade_UpdateBeastHandlerDisplay
     internal static bool Prefix(CurrentUpgrade __instance)
     {
         return __instance.row < 3;
+    }
+}
+
+[HarmonyPatch(typeof(AnalyticsTrackerSim), nameof(AnalyticsTrackerSim.OnTowerUpgraded))]
+internal static class AnalyticsTrackerSim_OnTowerUpgraded
+{
+    [HarmonyPrefix]
+    internal static bool Prefix(Tower tower, int pathUpgraded, bool isParagon)
+    {
+        if (isParagon) return true;
+        if (pathUpgraded >= 3) return false;
+
+        var tiers = tower.GetAllTiers();
+        var tier = tiers[pathUpgraded];
+
+        return tier < 6;
     }
 }
