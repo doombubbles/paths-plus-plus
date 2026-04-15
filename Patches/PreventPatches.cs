@@ -1,5 +1,4 @@
 ﻿using System.Linq;
-using BTD_Mod_Helper;
 using HarmonyLib;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Input;
@@ -12,6 +11,9 @@ using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
 
 namespace PathsPlusPlus.Patches;
 
+/// <summary>
+/// Whether no more upgrades should be allowed in this path due to the upgrades in other paths being too high
+/// </summary>
 [HarmonyPatch(typeof(TowerSelectionMenu), nameof(TowerSelectionMenu.IsUpgradePathClosed))]
 internal static class TowerSelectionMenu_IsUpgradePathClosed
 {
@@ -27,9 +29,9 @@ internal static class TowerSelectionMenu_IsUpgradePathClosed
         var tower = __instance.selectedTower.tower;
         var towerId = tower.towerModel.baseId;
         var tiers = tower.GetAllTiers();
-        tiers[path]++;
+        var tier = ++tiers[path];
 
-        if (PathPlusPlus.TryGetPath(tower.towerModel.baseId, path, out var pathPlusPlus))
+        if (PathPlusPlus.TryGetPath(tower, path, tier, out var pathPlusPlus))
         {
             __result = !pathPlusPlus.ValidTiers(tiers.ToArray());
             return false;
@@ -46,6 +48,9 @@ internal static class TowerSelectionMenu_IsUpgradePathClosed
     }
 }
 
+/// <summary>
+/// Controlling if upgrades are blocked because of TowerUpgradeLocks
+/// </summary>
 [HarmonyPatch(typeof(UpgradeButton), nameof(UpgradeButton.IsUpgradeBlocked))]
 internal static class UpgradeButton_IsUpgradeBlocked
 {
@@ -59,6 +64,10 @@ internal static class UpgradeButton_IsUpgradeBlocked
     }
 }
 
+/// <summary>
+/// Controlling whether further upgrades are blocked on this path based on lacking tower inventory for them
+/// (includes checking quantity of tier 5s)
+/// </summary>
 [HarmonyPatch(typeof(TowerInventory), nameof(TowerInventory.IsPathTierLocked))]
 internal static class TowerInventory_IsPathTierLocked
 {
@@ -78,9 +87,15 @@ internal static class TowerToSimulation_GetMaxTierForPath
     [HarmonyPrefix]
     private static bool Prefix(TowerToSimulation __instance, int path, ref int __result)
     {
-        __result = PathPlusPlus.TryGetPath(__instance.Def.baseId, path, out var pathPlusPlus)
-            ? pathPlusPlus.UpgradeCount
-            : 5;
+        __result = 5;
+
+        foreach (var p in PathPlusPlus.GetPaths(__instance.tower, path))
+        {
+            if (p.UpgradeCount > __result)
+            {
+                __result = p.UpgradeCount;
+            }
+        }
 
         return false;
     }

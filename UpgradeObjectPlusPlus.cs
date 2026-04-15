@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using BTD_Mod_Helper;
 using BTD_Mod_Helper.Api.Components;
 using BTD_Mod_Helper.Api.Enums;
@@ -6,25 +7,24 @@ using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Unity.Bridge;
 using Il2CppAssets.Scripts.Unity.Menu;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using MelonLoader;
 using UnityEngine;
 
 namespace PathsPlusPlus;
 
 [RegisterTypeInIl2Cpp(false)]
-internal class UpgradeObjectPlusPlus : MonoBehaviour
+internal class UpgradeObjectPlusPlus(IntPtr ptr) : MonoBehaviour(ptr)
 {
     public UpgradeObject upgradeObject = null!;
 
     public string? pathId;
 
-    public bool overrideParagon = PathsPlusPlusMod.ParagonOverlapDefault;
+    public bool overrideParagon; // whether upgradeplusplus on this object should show even if paragon available
 
     public ModHelperButton? cycle;
 
-    public UpgradeObjectPlusPlus(IntPtr ptr) : base(ptr)
-    {
-    }
+    public Il2CppStringArray cyclePathIds = null!;
 
     public void InitForTower(TowerToSimulation tts, string path)
     {
@@ -35,7 +35,10 @@ internal class UpgradeObjectPlusPlus : MonoBehaviour
         upgradeObject.path = pathPlusPlus.Path;
         upgradeObject.tts = tts;
         upgradeObject.upgradeButton.tts = tts;
-        var tier = upgradeObject.tier = tts.tower.GetTier(path);
+        if (tts.tower.GetTier(path) is var tier && tier > upgradeObject.tier)
+        {
+            upgradeObject.tier = tier;
+        }
 
         try
         {
@@ -43,23 +46,7 @@ internal class UpgradeObjectPlusPlus : MonoBehaviour
             {
                 upgradeObject.LoadUpgrades();
             }
-            
-            if (tts.CanUpgradeToParagon(true) && tier >= 5 && tier < pathPlusPlus.UpgradeCount)
-            {
-                if (cycle == null)
-                {
-                    cycle = ModHelperButton.Create(new Info("Cycle", 100, 100, new Vector2(0.55f, 0.5f)),
-                        VanillaSprites.RetryIcon, null);
-                    cycle.SetParent(upgradeObject.transform);
-                }
 
-                cycle.gameObject.SetActive(true);
-                cycle.Button.SetOnClick(CycleParagon);
-            }
-            else if (cycle != null)
-            {
-                cycle.gameObject.SetActive(false);
-            }
         }
         catch (Exception e)
         {
@@ -67,30 +54,80 @@ internal class UpgradeObjectPlusPlus : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Whether the current UpgradeObject will be showing an upgrade beyond what it could with just Vanilla ones
-    /// </summary>
-    public bool IsExtra
+    public void CycleShowing(bool showing, Il2CppStringArray pathIds)
     {
-        get
+        cyclePathIds = pathIds;
+        if (showing)
         {
-            if (upgradeObject.path >= 3) return true;
+            if (cycle == null)
+            {
+                cycle = ModHelperButton.Create(new Info("Cycle", 150, 150, new Vector2(0.55f, 0.5f)),
+                    VanillaSprites.RestartIcon, null);
+                cycle.transform.Rotate(0, 0, 180);
+                cycle.SetParent(upgradeObject.transform);
+            }
 
-            if (upgradeObject.tier < 5) return false;
-
-            var tower = upgradeObject.towerSelectionMenu.selectedTower;
-            var hasExtraPath = PathPlusPlus.TryGetPath(tower.Def.baseId, upgradeObject.path, out _);
-
-            return hasExtraPath;
+            cycle.gameObject.SetActive(true);
+            cycle.Button.SetOnClick(CycleUpgrade);
+        }
+        else if (cycle != null)
+        {
+            cycle.gameObject.SetActive(false);
         }
     }
 
-    public void CycleParagon()
-    {
-        if (!IsExtra) return;
+    /// <summary>
+    /// Whether the current UpgradeObject will be showing an upgrade beyond what it could with just Vanilla ones
+    /// </summary>
+    public bool IsExtra =>
+        upgradeObject.path >= 3 ||
+        PathPlusPlus.TryGetPath(upgradeObject.towerSelectionMenu.selectedTower.tower, upgradeObject.path,
+            upgradeObject.tier + 1, out var p) &&
+        upgradeObject.tier >= p.StartTier;
 
-        overrideParagon = !overrideParagon;
-        upgradeObject.LoadUpgrades();
+    public void CycleUpgrade()
+    {
         MenuManager.instance.buttonClick3Sound.Play();
+
+        var paths = cyclePathIds.Select(s => PathsPlusPlusMod.PathsById[s]).ToList();
+
+        var tier = upgradeObject.tier;
+        var tts = upgradeObject.tts;
+        var path = upgradeObject.path;
+
+        var paragonInvolved = tts.CanUpgradeToParagon(true) && tier >= 5;
+
+        PathPlusPlus? nextPath;
+
+        var showingPath =  PathPlusPlus.GetPath(tts.tower, path, tier + 1);
+        if (!overrideParagon && paragonInvolved )
+        {
+            overrideParagon = true;
+            nextPath = paths.First();
+        }
+        else if (overrideParagon && showingPath == paths.Last() && paragonInvolved)
+        {
+            overrideParagon = false;
+            nextPath = null;
+        }
+        else if (showingPath == null)
+        {
+            nextPath = paths.First();
+        }
+        else
+        {
+            var index = paths.IndexOf(showingPath) + 1;
+            nextPath = index >= paths.Count ? null : paths[index];
+        }
+
+        foreach (var p in paths)
+        {
+            tts.tower.RemoveMutatorsById(p.Id);
+        }
+
+        nextPath?.SetTier(tts.tower, -1);
+
+        pathId = nextPath?.Id;
+        upgradeObject.LoadUpgrades();
     }
 }

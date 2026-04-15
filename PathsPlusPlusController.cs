@@ -13,15 +13,11 @@ using UnityEngine.UI;
 namespace PathsPlusPlus;
 
 [RegisterTypeInIl2Cpp(false)]
-internal class PathsPlusPlusController : MonoBehaviour
+internal class PathsPlusPlusController(IntPtr ptr) : MonoBehaviour(ptr)
 {
     public TowerSelectionMenu menu = null!;
     public ScrollRect scrollRect = null!;
     public List<UpgradeObjectPlusPlus> moreUpgradeButtons = null!;
-
-    public PathsPlusPlusController(IntPtr ptr) : base(ptr)
-    {
-    }
 
     private void Update()
     {
@@ -81,7 +77,7 @@ internal class PathsPlusPlusController : MonoBehaviour
         verticalLayoutGroup.childForceExpandHeight = false;
         verticalLayoutGroup.childForceExpandWidth = false;
         verticalLayoutGroup.childAlignment = TextAnchor.UpperCenter;
-        verticalLayoutGroup.padding = new RectOffset {bottom = 25, top = 25};
+        verticalLayoutGroup.padding = new RectOffset { bottom = 25, top = 25 };
         verticalLayoutGroup.spacing = 15;
 
         var contentSizeFitter = towerDetails.AddComponent<ContentSizeFitter>();
@@ -179,33 +175,41 @@ internal class PathsPlusPlusController : MonoBehaviour
 
     public void InitUpgradeButtons()
     {
-        if (menu.selectedTower is not {hero: null, tower.towerModel.isParagon: false} tower) return;
+        if (menu.selectedTower is not { hero: null, tower.towerModel.isParagon: false } tower) return;
 
-        if (!PathsPlusPlusMod.PathsByTower.TryGetValue(tower.Def.baseId, out var list)) list = [];
+        if (!PathsPlusPlusMod.PathsByTower.TryGetValue(tower.Def.baseId, out var paths)) paths = [];
 
-        while (list.Count > moreUpgradeButtons.Count)
+        while (paths.Count > moreUpgradeButtons.Count)
         {
             AddNewUpgradeObject();
         }
 
-        if (PathsPlusPlusMod.ExtendedPathsByTower.TryGetValue(tower.Def.baseId, out var array))
+        if (PathsPlusPlusMod.ExtendedPathsByTower.TryGetValue(tower.Def.baseId, out var extendedPaths))
         {
-            for (var p = 0; p < array.Length; p++)
+            for (var path = 0; path < 3; path++)
             {
-                var upgradeButton = menu.upgradeButtons[p]!;
+                var upgradeButton = menu.upgradeButtons[path]!;
                 var button = upgradeButton.GetComponent<UpgradeObjectPlusPlus>();
                 if (button == null || !button.isActiveAndEnabled) continue;
 
-                var path = array[p];
-                if (path == null)
+                var tier = upgradeButton.tier;
+
+                var extendedPath = PathPlusPlus.GetPath(tower.tower, path, tier + 1);
+                if (extendedPath == null)
                 {
                     button.pathId = null;
                 }
                 else
                 {
-                    button.InitForTower(tower, path.Id);
-                    upgradeButton.UpdateVisuals(path.Path, false);
+                    button.InitForTower(tower, extendedPath.Id);
+                    upgradeButton.UpdateVisuals(extendedPath.Path, false);
                 }
+
+                var possiblePaths = PathPlusPlus.GetPaths(tower.tower, path)
+                    .Where(p => p.StartTier == upgradeButton.tier)
+                    .ToList();
+                button.CycleShowing(possiblePaths.Count > (tier < 5 || tower.CanUpgradeToParagon(true) ? 0 : 1),
+                    possiblePaths.Select(plus => plus.Id).ToArray());
             }
         }
 
@@ -217,9 +221,9 @@ internal class PathsPlusPlusController : MonoBehaviour
             var popup = popups.First(fixer => fixer.upgradeObj == button.upgradeObject.gameObject)
                 .GetComponent<UpgradeInfoPopup>();
 
-            if (i < list.Count)
+            if (i < paths.Count)
             {
-                var path = list[i];
+                var path = paths[i];
                 button.gameObject.SetActive(true);
                 button.upgradeObject.enabled = true;
                 button.InitForTower(tower, path.Id);
@@ -246,7 +250,7 @@ internal class PathsPlusPlusController : MonoBehaviour
 
     public void UpdateVisuals()
     {
-        if (menu.selectedTower is not {hero: null, tower.towerModel.isParagon: false}) return;
+        if (menu.selectedTower is not { hero: null, tower.towerModel.isParagon: false }) return;
 
         foreach (var upgradeObjectPlusPlus in moreUpgradeButtons)
         {
@@ -259,7 +263,7 @@ internal class PathsPlusPlusController : MonoBehaviour
 
     public void UpdateCosts()
     {
-        if (menu.selectedTower is not {hero: null, tower.towerModel.isParagon: false}) return;
+        if (menu.selectedTower is not { hero: null, tower.towerModel.isParagon: false }) return;
 
         foreach (var upgradeObjectPlusPlus in moreUpgradeButtons)
         {
@@ -274,7 +278,7 @@ internal class PathsPlusPlusController : MonoBehaviour
 
     public void CheckCash()
     {
-        if (menu.selectedTower is not {hero: null, tower.towerModel.isParagon: false}) return;
+        if (menu.selectedTower is not { hero: null, tower.towerModel.isParagon: false }) return;
 
         foreach (var upgradeObjectPlusPlus in moreUpgradeButtons)
         {

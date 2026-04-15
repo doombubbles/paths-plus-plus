@@ -11,9 +11,12 @@ using Il2CppAssets.Scripts.Models;
 using Il2CppAssets.Scripts.Models.Profile;
 using Il2CppAssets.Scripts.Models.TowerSets;
 using Il2CppAssets.Scripts.Simulation;
+using Il2CppAssets.Scripts.Simulation.Objects;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 using MelonLoader;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using PathsPlusPlus;
 using UnityEngine;
 
@@ -30,22 +33,27 @@ public class PathsPlusPlusMod : BloonsTD6Mod
     /// <summary>
     /// Map of ID to PathPlusPlus object
     /// </summary>
-    public static readonly Dictionary<string, PathPlusPlus> PathsById = new();
+    public static readonly Dictionary<string, PathPlusPlus> PathsById = [];
 
     /// <summary>
     /// Map of Tower ID to list of all PathPlusPlus objects added
     /// </summary>
-    public static readonly Dictionary<string, List<PathPlusPlus>> PathsByTower = new();
+    public static readonly Dictionary<string, List<PathPlusPlus>> PathsByTower = [];
 
     /// <summary>
     /// Map of ID to UpgradePlusPlus object
     /// </summary>
-    public static readonly Dictionary<string, UpgradePlusPlus> UpgradesById = new();
+    public static readonly Dictionary<string, UpgradePlusPlus> UpgradesById = [];
 
     /// <summary>
-    /// Map of Tower ID to 3-length array of possibly null PathPlusPlus objects for extending vanilla paths
+    /// Map of Tower Id to Path index to list of PathsPlusPlus objects
     /// </summary>
-    public static readonly Dictionary<string, PathPlusPlus?[]> ExtendedPathsByTower = new();
+    public static readonly Dictionary<string, Dictionary<int, List<PathPlusPlus>>> ExtendedPathsByTower = [];
+
+    /// <summary>
+    /// Map of Tower ID to 3-length array of possibly null PathPlusPlus ids
+    /// </summary>
+    public static readonly Dictionary<string, string?[]> DefaultExtendedPaths = [];
 
     /// <summary>
     /// ModSetting to restrict Paths++ upgrading like vanilla upgrading
@@ -59,22 +67,6 @@ public class PathsPlusPlusMod : BloonsTD6Mod
         button = true,
         enabledText = "On",
         disabledText = "Off"
-    };
-
-    /// <summary>
-    /// ModSetting to affect default Paragon Upgrade overriding behavior
-    /// </summary>
-    public static readonly ModSettingBool ParagonOverlapDefault = new(true)
-    {
-        description =
-            "When a Paragon Upgrade and a Paths++ upgrade on a tower overlap, changes which one is showed by default. " +
-            "You'll always be able to right click the upgrade to toggle which is currently showing.",
-        icon = VanillaSprites.UpgradeContainerParagonUnlocked,
-        button = true,
-        enabledText = "Paths++",
-        enabledButton = VanillaSprites.BlueBtnLong,
-        disabledText = "Paragon",
-        disabledButton = VanillaSprites.ParagonBtnLong
     };
 
     #region Hotkeys
@@ -146,19 +138,19 @@ public class PathsPlusPlusMod : BloonsTD6Mod
         {
             if (ExtendedPathsByTower.TryGetValue(towerDetails.towerId, out var paths))
             {
-                if (towerDetails.pathOneMax == 5 && paths[0] != null)
+                if (towerDetails.pathOneMax == 5 && paths.TryGetValue(0, out var topPaths))
                 {
-                    towerDetails.pathOneMax = paths[0]!.UpgradeCount;
+                    towerDetails.pathOneMax = topPaths.Max(p => p.UpgradeCount);
                 }
 
-                if (towerDetails.pathTwoMax == 5 && paths[1] != null)
+                if (towerDetails.pathTwoMax == 5 && paths.TryGetValue(1, out var middlePaths))
                 {
-                    towerDetails.pathTwoMax = paths[1]!.UpgradeCount;
+                    towerDetails.pathTwoMax = middlePaths.Max(p => p.UpgradeCount);
                 }
 
-                if (towerDetails.pathThreeMax == 5 && paths[2] != null)
+                if (towerDetails.pathThreeMax == 5 && paths.TryGetValue(2, out var bottomPaths))
                 {
-                    towerDetails.pathThreeMax = paths[2]!.UpgradeCount;
+                    towerDetails.pathThreeMax = bottomPaths.Max(p => p.UpgradeCount);
                 }
             }
         }
@@ -230,6 +222,38 @@ public class PathsPlusPlusMod : BloonsTD6Mod
     }
 
     /// <inheritdoc />
+    public override void OnSaveSettings(JObject settings)
+    {
+        settings[nameof(DefaultExtendedPaths)] = JObject.FromObject(DefaultExtendedPaths);
+    }
+
+    /// <inheritdoc />
+    public override void OnLoadSettings(JObject settings)
+    {
+        var dict = settings[nameof(DefaultExtendedPaths)]?.ToObject<Dictionary<string, string?[]>>();
+        if (dict != null)
+        {
+            foreach (var (key, value) in dict)
+            {
+                DefaultExtendedPaths[key] = value;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public override void OnTowerCreated(Tower tower, Entity target, Model modelToUse)
+    {
+        if (DefaultExtendedPaths.TryGetValue(tower.towerModel.baseId, out var defaults))
+        {
+            foreach (var path in defaults.Where(pathId => pathId != null && PathsById.ContainsKey(pathId))
+                         .Select(pathId => PathsById[pathId!]))
+            {
+                path.SetTier(tower, -1);
+            }
+        }
+    }
+
+    /// <inheritdoc />
     public override object? Call(string operation, params object[] parameters)
     {
         switch (operation)
@@ -245,10 +269,10 @@ public class PathsPlusPlusMod : BloonsTD6Mod
                 }
 
                 break;
-            case "OnTowerPasted" when parameters.CheckTypes(out Tower towerPasted):
+            case "OnTowerPasted" when parameters.CheckTypes(out Tower towerPasted, out bool isQueued):
                 foreach (var (path, tier) in Clipboard)
                 {
-                    path.SetTier(towerPasted, tier);
+                    path.SetTier(towerPasted, isQueued ? -1 : tier);
                 }
 
                 break;
@@ -259,10 +283,16 @@ public class PathsPlusPlusMod : BloonsTD6Mod
                 return PathsById.Keys;
             case "GetTiers" when parameters.CheckTypes(out Tower tower):
                 return tower.GetAllTiers();
+#pragma warning disable CS0618 // Type or member is obsolete
             case "ValidTiers" when parameters.CheckTypes(out string towerId, out int path, out int[] tiers):
                 return !PathPlusPlus.TryGetPath(towerId, path, out var p) || p.ValidTiers(tiers);
             case "GetUpgrade" when parameters.CheckTypes(out string towerId, out int path, out int tier):
                 return PathPlusPlus.GetPath(towerId, path)?.Upgrades.GetValueOrDefault(tier)?.Id;
+#pragma warning restore CS0618 // Type or member is obsolete
+            case "GetUpgrade" when parameters.CheckTypes(out Tower tower, out int path, out int tier):
+                return PathPlusPlus.GetPath(tower, path)?.Upgrades.GetValueOrDefault(tier)?.Id;
+            case "ValidTiers" when parameters.CheckTypes(out Tower tower, out int path, out int[] tiers):
+                return !PathPlusPlus.TryGetPath(tower, path, out var ps) || ps.ValidTiers(tiers);
         }
 
         return base.Call(operation, parameters);

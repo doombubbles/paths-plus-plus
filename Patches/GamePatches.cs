@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
@@ -48,17 +49,22 @@ internal static class UnityToSimulation_UpgradeTower_Impl
         var towerManager = __instance.simulation.towerManager;
         var tower = towerManager.GetTowerById(id);
         var tiers = tower.GetAllTiers();
+        var tier = ++tiers[pathIndex];
 
-        var tier = tiers[pathIndex] + 1;
-
-        if (pathIndex < 3 && tier <= 5) return true;
+        if (!PathPlusPlus.TryGetPath(tower, pathIndex, tier, out var path)) return true;
 
         var action = __instance.UnregisterCallback(callbackId, inputId);
         var cost = 99999999f;
 
         if (towerManager.CanUpgradeTower(tower, pathIndex, tier, inputId, ref cost))
         {
-            towerManager.UpgradeTower(inputId, tower, tower.rootModel.Cast<TowerModel>(), pathIndex, cost,
+            var def = tower.rootModel.Cast<TowerModel>();
+            if (path is { ExtendVanillaPath: >= 0, StartTier: < 5, UseUpgradedTowerModels: true } && tier <= 5)
+            {
+                def = __instance.Model.GetTower(def.baseId, tiers[0], tiers[1], tiers[2]);
+            }
+
+            towerManager.UpgradeTower(inputId, tower, def, pathIndex, cost,
                 nonUpgradeCashInvestment: nonUpgradeCashInvestment);
         }
 
@@ -81,14 +87,14 @@ internal static class TowerManager_GetTowerUpgradeCost
     private static void Prefix(Tower? tower, int path, int tier, ref Il2CppReferenceArray<UpgradePathModel>? __state)
     {
         if (tower?.towerModel?.Is(out var towerModel) != true ||
-            (tier <= 5 && path < 3) ||
             path < 0 ||
-            !PathPlusPlus.TryGetPath(towerModel.baseId, path, out var pathPlusPlus)) return;
+            !PathPlusPlus.TryGetPath(tower, path, tier, out var pathPlusPlus) ||
+            !pathPlusPlus.Upgrades.TryGetValue(tier - 1, out var upgrade)) return;
 
         __state = towerModel.upgrades;
         towerModel.upgrades = new[]
         {
-            new UpgradePathModel(pathPlusPlus.Upgrades[tier - 1]!.Id, towerModel.name)
+            new UpgradePathModel(upgrade.Id, towerModel.name)
         };
     }
 
@@ -108,15 +114,22 @@ internal static class TowerManager_GetTowerUpgradeCost
 [HarmonyPatch(typeof(TowerManager), nameof(TowerManager.UpgradeTower))]
 internal static class TowerManager_UpgradeTower
 {
+    [HarmonyPrefix]
+    internal static void Prefix(Tower tower, int pathIndex, ref int __state)
+    {
+        __state = tower.GetAllTiers()[pathIndex] + 1;
+    }
+
     [HarmonyPostfix]
-    internal static void Postfix(Tower tower, int pathIndex)
+    internal static void Postfix(Tower tower, int pathIndex, ref int __state)
     {
         var tiers = tower.GetAllTiers();
         if (pathIndex < 0 || pathIndex >= tiers.Count) return;
-        var tier = tiers[pathIndex] + 1;
-        if (pathIndex < 3 && tier <= 5) return;
 
-        tower.SetTier(pathIndex, tier, true);
+        if (PathPlusPlus.TryGetPath(tower, pathIndex, __state, out var pathPlusPlus))
+        {
+            pathPlusPlus.SetTier(tower, __state, true);
+        }
     }
 }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BTD_Mod_Helper;
 using BTD_Mod_Helper.Api;
+using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Api.ModOptions;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
@@ -72,9 +73,31 @@ public abstract class UpgradePlusPlus : NamedModContent
     /// <summary>
     /// Sprite reference for the portrait
     /// </summary>
-    public virtual SpriteReference? PortraitReference => string.IsNullOrEmpty(Portrait)
-                                                             ? GetSpriteReferenceOrNull(Path.Name)
-                                                             : GetSpriteReferenceOrDefault(Portrait);
+    public virtual SpriteReference? PortraitReference =>
+        !string.IsNullOrEmpty(Portrait)
+            ? GetSpriteReferenceOrDefault(Portrait)
+            : GetSpriteReferenceOrNull(Path.Name) ??
+              CreateSpriteReference(VanillaSprites.ByName.GetValueOrDefault(VanillaPortrait));
+
+    private string VanillaPortrait
+    {
+        get
+        {
+            var vanillaPortraitAttempt = Path.Tower.Replace(TowerType.WizardMonkey, "Wizard");
+            for (var p = 0; p <= 2; p++)
+            {
+                if (Path.Path == p && Tier < 6)
+                {
+                    vanillaPortraitAttempt += Tier;
+                }
+                else
+                {
+                    vanillaPortraitAttempt += "0";
+                }
+            }
+            return vanillaPortraitAttempt;
+        }
+    }
 
     /// <summary>
     /// Override the texture to use for the container for the upgrade in the upgrades screen
@@ -124,11 +147,6 @@ public abstract class UpgradePlusPlus : NamedModContent
     {
         if (Tier <= 0) throw new Exception($"Tier of {Id} must be greater than {0}");
 
-        if (Path.ExtendVanillaPath >= 0 && Tier < 6)
-        {
-            throw new Exception($"Tier of {Id} can't be less than 6 when using ExtendsVanillaPath");
-        }
-
         if (!Path.Upgrades.TryAdd(Tier - 1, this))
         {
             throw new Exception($"Tier {Tier} of {Path.Id} is used by both {Id} and {Path.Upgrades[Tier - 1].Id}");
@@ -161,7 +179,7 @@ public abstract class UpgradePlusPlus : NamedModContent
     /// </summary>
     /// <returns></returns>
     public UpgradeModel GetUpgradeModel() => upgradeModel ??= new UpgradeModel(Id, Cost, 0, IconReference, Path.Path,
-                                                 Tier - 1, 0, NeedsConfirmation ? Id : "", "");
+        Tier - 1, 0, NeedsConfirmation ? Id : "", "");
 
     /// <summary>
     /// Returns whether this Upgrade is of a higher tier than any other base or PathsPlusPlus upgrade that the tower has

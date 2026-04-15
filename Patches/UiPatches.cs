@@ -5,13 +5,11 @@ using System.Reflection;
 using BTD_Mod_Helper;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
-using Il2Cpp;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity.Bridge;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
-using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using UnityEngine.EventSystems;
 using Object = Il2CppSystem.Object;
 
@@ -114,22 +112,28 @@ internal static class UpgradeObject_LoadUpgrades
 
         var tower = __instance.towerSelectionMenu.selectedTower.tower;
 
+        UpgradeModel? upgradeModel = null;
+
         if (__instance.tier < path.UpgradeCount &&
             !InGame.Bridge.IsUpgradeLocked(tower.Id, __instance.path, __instance.tier + 1))
         {
-            var upgradeButton = __instance.upgradeButton;
-            var upgradeModel = InGame.Bridge.Model.GetUpgrade(path.Upgrades[__instance.tier].Id);
-            if (__instance.tts.CanUpgradeToParagon(true) &&
-                (!upgradeObj.overrideParagon || __instance.tier == path.UpgradeCount))
-            {
-                upgradeModel = InGame.Bridge.Model.GetUpgrade(__instance.tts.Def.paragonUpgrade.upgrade);
-            }
+            upgradeModel = InGame.Bridge.Model.GetUpgrade(path.Upgrades[__instance.tier].Id);
+        }
 
+        if (__instance.tts.CanUpgradeToParagon(true) && __instance.tier >= 5 &&
+            (!upgradeObj.overrideParagon || __instance.tier == path.UpgradeCount))
+        {
+            upgradeModel = InGame.Bridge.Model.GetUpgrade(__instance.tts.Def.paragonUpgrade.upgrade);
+        }
+
+        if (upgradeModel != null)
+        {
+            var upgradeButton = __instance.upgradeButton;
             upgradeButton.SetUpgradeModel(upgradeModel);
             upgradeButton.UpdateVisuals(__instance.path, upgradeModel.tier + 1, false);
         }
 
-        if (__instance.tier > 0 && (__instance.path > 2 || __instance.tier > 5))
+        if (__instance.tier > 0 && (__instance.path > 2 || __instance.tier > path.StartTier))
         {
             __instance.currentUpgradeModel = InGame.Bridge.Model.GetUpgrade(path.Upgrades[__instance.tier - 1].Id);
             __instance.currentUpgrade.SetUpgradeModel(__instance.currentUpgradeModel, __instance.tts);
@@ -210,11 +214,15 @@ internal static class Tower_GetUpgrade
     [HarmonyPrefix]
     private static bool Prefix(Tower __instance, int path, ref UpgradeModel? __result)
     {
-        if (PathPlusPlus.TryGetPath(__instance.towerModel.baseId, path, out var thisPath))
+        if (PathPlusPlus.TryGetPath(__instance, path, out var thisPath))
         {
             var tier = __instance.GetTier(thisPath.Id);
+            if (path < 3)
+            {
+                tier = Math.Max(__instance.towerModel.tiers[path], tier);
+            }
 
-            if (path < 3 && tier < 5) return true;
+            if (path < 3 && tier < thisPath.StartTier) return true;
 
             __result = tier < thisPath.UpgradeCount
                 ? __instance.Sim.model.GetUpgrade(thisPath.Upgrades[tier]!.Id)
@@ -241,16 +249,17 @@ internal class UpgradeObject_CheckBlockedPath
 
         var tower = __instance.towerSelectionMenu.selectedTower.tower;
         var path = __instance.path;
-        var pathPlusPlus = PathPlusPlus.GetPath(tower.towerModel.baseId, path);
-        var max = pathPlusPlus?.UpgradeCount ?? 5;
+        var paths = PathPlusPlus.GetPaths(tower, path).ToList();
 
-        if (!PathsPlusPlusMod.BalancedMode && pathPlusPlus != null)
+        var max = paths.Select(plus => plus.UpgradeCount).DefaultIfEmpty(5).Max();
+
+        if (!PathsPlusPlusMod.BalancedMode && paths.Any())
         {
             __result = max;
             return false;
         }
 
-        if (pathPlusPlus == null &&
+        if (!paths.Any() &&
             (!PathsPlusPlusMod.BalancedMode || path < 3 && ModHelper.HasMod("UltimateCrosspathing")))
         {
             return true;
@@ -259,15 +268,15 @@ internal class UpgradeObject_CheckBlockedPath
         var tiers = tower.GetAllTiers();
         var thisTier = tiers[path];
 
-        var paths = PathsPlusPlusMod.PathsByTower.GetValueOrDefault(tower.towerModel.baseId, []);
-
         for (var i = thisTier; i <= max; i++)
         {
             __result = i;
             tiers[path] = i + 1;
-            if (pathPlusPlus != null)
+
+            if (paths.Any())
             {
-                if (!pathPlusPlus.ValidTiers(tiers.ToArray())) break;
+                paths.RemoveAll(plus => !plus.ValidTiers(tiers.ToArray()));
+                if (!paths.Any()) break;
             }
             else
             {
@@ -328,11 +337,11 @@ internal static class UpgradeObject_SetTier
         var tiers = __instance.tiers.ToList();
         var baseTier = tiers[0]!;
 
-        var show = 5;
+        var show = __instance.CheckBlockedPath();
 
         if (__instance.gameObject.HasComponent(out UpgradeObjectPlusPlus upgradePlusPlus))
         {
-            show = upgradePlusPlus.GetPath()?.UpgradeCount ?? 5;
+            show = Math.Max(show, upgradePlusPlus.GetPath()?.UpgradeCount ?? show);
 
             if (maxTier == 5) maxTier = Math.Max(5, show);
             if (maxTierRestricted == 5) maxTierRestricted = Math.Max(5, show);
@@ -371,7 +380,7 @@ internal static class UpgradeButton_OnPointerDown
         if (eventData.button == PointerEventData.InputButton.Right &&
             TowerSelectionMenu.instance.selectedTower.CanUpgradeToParagon(true))
         {
-            __instance.GetComponentInParent<UpgradeObjectPlusPlus>().Exists()?.CycleParagon();
+            __instance.GetComponentInParent<UpgradeObjectPlusPlus>().Exists()?.CycleUpgrade();
         }
     }
 }

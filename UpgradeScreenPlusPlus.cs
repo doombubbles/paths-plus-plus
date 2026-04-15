@@ -6,14 +6,15 @@ using BTD_Mod_Helper.Api.Components;
 using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
-using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Behaviors.Abilities;
+using Il2CppAssets.Scripts.Unity;
 using Il2CppAssets.Scripts.Unity.Menu;
-using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 using Il2CppAssets.Scripts.Unity.UI_New.Upgrade;
 using Il2CppInterop.Runtime.Attributes;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppSystem.Collections.Generic;
 using MelonLoader;
+using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -21,7 +22,7 @@ using UnityEngine.UI;
 namespace PathsPlusPlus;
 
 [RegisterTypeInIl2Cpp(false)]
-internal class UpgradeScreenPlusPlus : MonoBehaviour
+internal class UpgradeScreenPlusPlus(IntPtr ptr) : MonoBehaviour(ptr)
 {
     private const int TopBarHeight = 345;
     private const int LeftSideWidth16X9 = 1240;
@@ -35,27 +36,19 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
     public RectTransform upgradePaths = null!;
     public RectTransform scrollContent = null!;
 
-    public readonly List<GameObject> createdUpgradePaths;
-
-    public readonly List<UpgradeDetails>[] extraUpgradeDetails;
-
     private float paragonOffset;
 
-    public UpgradeScreenPlusPlus(IntPtr ptr) : base(ptr)
-    {
-        createdUpgradePaths = new List<GameObject>();
-        extraUpgradeDetails =
-        [
-            new List<UpgradeDetails>(),
-            new List<UpgradeDetails>(),
-            new List<UpgradeDetails>()
-        ];
-    }
+    public readonly List<GameObject> createdUpgradePaths = new();
+
+    public readonly List<UpgradeDetails>[] extraUpgradeDetails =
+    [
+        new(),
+        new(),
+        new()
+    ];
 
     public void UpdateUi(string towerId)
     {
-        scrollPanel.ScrollRect.normalizedPosition = new Vector2(0, 1);
-
         foreach (var createdUpgradePath in createdUpgradePaths)
         {
             createdUpgradePath.gameObject.SetActive(false);
@@ -67,37 +60,74 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
         }
 
         var extraPaths = PathsPlusPlusMod.PathsByTower.TryGetValue(towerId, out var somePaths)
-            ? somePaths.Where(path => path is {ShowInMenu: true}).ToList()
+            ? somePaths.Where(path => path is { ShowInMenu: true }).ToList()
             : [];
 
-        var extendedPaths = PathsPlusPlusMod.ExtendedPathsByTower.TryGetValue(towerId, out var morePaths)
-            ? morePaths.Where(path => path is {ShowInMenu: true}).ToList()!
-            : [];
+        var allExtendedPaths = PathsPlusPlusMod.ExtendedPathsByTower.TryGetValue(towerId, out var ps) ? ps : [];
+        var currentExtendedPaths = new System.Collections.Generic.List<PathPlusPlus>();
+        for (var p = 0; p <= 2; p++)
+        {
+            if (!allExtendedPaths.TryGetValue(p, out var paths)) continue;
 
-        var allPaths = extraPaths.Concat(extendedPaths).ToArray();
+            if (PathsPlusPlusMod.DefaultExtendedPaths.TryGetValue(towerId, out var defaults) &&
+                defaults[p] is { } d &&
+                PathsPlusPlusMod.PathsById.ContainsKey(d))
+            {
+                currentExtendedPaths.Add(paths.Single(plus => plus.Id == d));
+            }
+            else
+            {
+                foreach (var path in paths.Where(path => path.StartTier >= 5))
+                {
+                    currentExtendedPaths.Add(path);
+                    break;
+                }
+            }
+        }
+
+        var allPaths = extraPaths.Concat(currentExtendedPaths).ToArray();
 
         var paragonPanel = upgradeScreen.paragonPanel.transform;
 
-        if (allPaths.Length == 0)
+        foreach (var cycle in upgradeScreen.GetComponentsInChildren<Button>(true)
+                     .Where(button => button.name == "Cycle"))
         {
-            scrollPanel.ScrollRect.enabled = false;
+            cycle.gameObject.SetActive(false);
+        }
+
+        var scrollRect = scrollPanel.ScrollRect;
+        if (allPaths.Length == 0 && allExtendedPaths.Count == 0)
+        {
+            scrollRect.horizontal = false;
+            scrollRect.vertical = false;
+            TaskScheduler.ScheduleTask(() =>
+            {
+                scrollRect.SetHorizontalNormalizedPosition(0);
+                scrollRect.SetVerticalNormalizedPosition(1);
+            });
+
             paragonPanel.localPosition = Vector3.zero;
             paragonOffset = 0;
             return;
         }
 
-        var maxUpgrades = allPaths.Max(path => path!.UpgradeCount);
+        var maxUpgrades = allPaths.Length == 0 ? 5 : allPaths.Max(path => path!.UpgradeCount);
         var minForScrolling = upgradeScreen.ShowParagonPanel() ? 6 : 7;
 
-        scrollPanel.ScrollRect.enabled = true;
-        scrollPanel.ScrollRect.horizontal = maxUpgrades >= minForScrolling;
-        scrollPanel.ScrollRect.vertical = extraPaths.Any();
+        scrollRect.horizontal = maxUpgrades >= minForScrolling;
+        scrollRect.vertical = extraPaths.Any();
+
+        TaskScheduler.ScheduleTask(() =>
+        {
+            if (!scrollRect.horizontal) scrollRect.SetHorizontalNormalizedPosition(0);
+            if (!scrollRect.vertical) scrollRect.SetVerticalNormalizedPosition(1);
+        });
 
 
         var before = upgradePaths.localPosition;
         var deltaY = 0f;
         var deltaX = 0f;
-        
+
         for (var path = 0; path < extraPaths.Count; path++)
         {
             var pathPlusPlus = extraPaths[path];
@@ -165,68 +195,29 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
             }
         }
 
-        foreach (var extendedPath in extendedPaths)
+        foreach (var extendedPath in currentExtendedPaths)
         {
             deltaX = Math.Max(deltaX, (extendedPath!.UpgradeCount - 5) * UpgradeSpacing);
-            
-            var multiple = ModContent.GetContent<PathPlusPlus>().Any(path =>
-                path != extendedPath && path.Tower == extendedPath.Tower && path.Path == extendedPath.Path);
 
+            var upgrades = GetUpgrades(extendedPath.ExtendVanillaPath);
             var extraUpgrades = extraUpgradeDetails[extendedPath.ExtendVanillaPath];
-            var upgrades = extendedPath.ExtendVanillaPath switch
-            {
-                PathPlusPlus.Top => upgradeScreen.path1Upgrades,
-                PathPlusPlus.Middle => upgradeScreen.path3Upgrades,
-                PathPlusPlus.Bottom => upgradeScreen.path3Upgrades,
-                _ => throw new IndexOutOfRangeException()
-            };
-
-            var container = extendedPath.ExtendVanillaPath switch
-            {
-                PathPlusPlus.Top => upgradeScreen.path1Container,
-                PathPlusPlus.Middle => upgradeScreen.path2Container,
-                PathPlusPlus.Bottom => upgradeScreen.path3Container,
-                _ => throw new IndexOutOfRangeException()
-            };
+            var container = GetContainer(extendedPath.ExtendVanillaPath);
 
             foreach (var upgradePlusPlus in extendedPath.Upgrades.Values)
             {
                 try
                 {
-                    var index = upgradePlusPlus.Tier - 6;
-
-                    if (index >= extraUpgrades.Count)
+                    if (upgradePlusPlus.Tier > upgrades.Count + extraUpgrades.Count)
                     {
                         var newUpgradeDetails = Instantiate(upgrades.Last(), container.transform);
                         newUpgradeDetails.gameObject.name = "Upgrade(Clone)";
                         extraUpgrades.Add(newUpgradeDetails);
                     }
+                    var combinedUpgrades = upgrades.Concat(extraUpgrades.ToArray()).ToArray();
 
-                    var upgrade = extraUpgrades.Get(index);
+                    var upgrade = combinedUpgrades[upgradePlusPlus.Tier - 1];
 
                     SetUpgrade(upgrade, upgradePlusPlus);
-
-                    var cycle = upgrade.transform.GetComponentsInChildren<Button>(true)
-                        .FirstOrDefault(button => button.name == "Cycle");
-
-                    if (multiple && InGame.instance == null)
-                    {
-                        if (cycle == null)
-                        {
-                            var button = ModHelperButton.Create(new Info("Cycle", 100, 100, new Vector2(0, 0.5f)),
-                                VanillaSprites.RetryIcon, null);
-                            button.SetParent(upgrade.transform);
-                            cycle = button.Button;
-                        }
-
-                        cycle.gameObject.SetActive(true);
-                        cycle.SetOnClick(() => CycleExtendedPath(extendedPath, upgrade));
-                        multiple = false;
-                    }
-                    else if (cycle != null)
-                    {
-                        cycle.gameObject.SetActive(false);
-                    }
                 }
                 catch (Exception e)
                 {
@@ -244,11 +235,69 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
             }
         }
 
+        for (var p = 0; p <= 2; p++)
+        {
+            if (!allExtendedPaths.TryGetValue(p, out var paths)) continue;
+
+            var upgrades = GetUpgrades(p).Concat(extraUpgradeDetails[p].ToArray()).ToArray();
+
+            var showingPath = PathsPlusPlusMod.DefaultExtendedPaths.TryGetValue(towerId, out var defaultPaths)
+                ? defaultPaths[p]
+                : null;
+
+            for (var tier = 0; tier <= 5; tier++)
+            {
+                var currentPaths = paths.Where(plus => plus.StartTier == tier).Select(path => path.Id).ToList();
+                if (currentPaths.Count <= (tier == 5 ? 1 : 0)) continue;
+
+                var upgrade = upgrades[tier];
+
+                var cycle = upgrade.transform.GetComponentsInChildren<Button>(true)
+                    .FirstOrDefault(button => button.name == "Cycle");
+
+                if (cycle == null)
+                {
+                    var button = ModHelperButton.Create(new Info("Cycle", 150, 150, new Vector2(0, 0.5f)),
+                        VanillaSprites.RestartIcon, null);
+                    button.transform.Rotate(0, 0, 180);
+                    button.SetParent(upgrade.transform);
+                    cycle = button.Button;
+                }
+
+                cycle.gameObject.SetActive(true);
+                var finalP = p;
+                var finalTier = tier;
+                cycle.SetOnClick(() => CycleExtendedPath(towerId, finalP, finalTier, upgrade));
+
+                if (showingPath != null && currentPaths.Contains(showingPath))
+                {
+                    break;
+                }
+            }
+        }
+
+
         paragonOffset = deltaX;
 
         scrollContent.sizeDelta = new Vector2(deltaX, deltaY);
         upgradePaths.localPosition = before;
     }
+
+    private Il2CppReferenceArray<UpgradeDetails> GetUpgrades(int path) => path switch
+    {
+        PathPlusPlus.Top => upgradeScreen.path1Upgrades,
+        PathPlusPlus.Middle => upgradeScreen.path2Upgrades,
+        PathPlusPlus.Bottom => upgradeScreen.path3Upgrades,
+        _ => throw new IndexOutOfRangeException()
+    };
+
+    private GameObject GetContainer(int path) => path switch
+    {
+        PathPlusPlus.Top => upgradeScreen.path1Container,
+        PathPlusPlus.Middle => upgradeScreen.path2Container,
+        PathPlusPlus.Bottom => upgradeScreen.path3Container,
+        _ => throw new IndexOutOfRangeException()
+    };
 
     private static void SetUpgrade(UpgradeDetails upgrade, UpgradePlusPlus upgradePlusPlus)
     {
@@ -256,12 +305,9 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
 
         upgrade.SetUpgrade(upgrade.baseTowerID, upgradePlusPlus.GetUpgradeModel(),
             new List<AbilityModel>().Cast<ICollection<AbilityModel>>(), upgradePlusPlus.Path.Path,
-            upgradePlusPlus.PortraitReference ?? ModContent.CreateSpriteReference(
-                VanillaSprites.ByName.TryGetValue(upgrade.baseTowerID.Replace(TowerType.WizardMonkey, "Wizard") + "000",
-                    out var guid)
-                    ? guid
-                    : ""));
+            upgradePlusPlus.PortraitReference);
 
+        upgrade.icon.gameObject.SetActive(true);
         upgrade.abilityObject.SetActive(upgradePlusPlus.Ability);
 
         var theme = upgradePlusPlus.Tier >= 5 ? upgrade.tier5Theme : upgrade.standardTheme;
@@ -324,28 +370,28 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
     }
 
     [HideFromIl2Cpp]
-    private void CycleExtendedPath(PathPlusPlus extendedPath, UpgradeDetails upgradeDetails)
+    private void CycleExtendedPath(string towerId, int path, int tier, UpgradeDetails upgradeDetails)
     {
         MenuManager.instance.buttonClick3Sound.Play();
 
-        var allPaths = ModContent.GetContent<PathPlusPlus>()
-            .Where(path => path.Tower == extendedPath.Tower && path.Path == extendedPath.Path)
-            .ToList();
-        var currentIndex = allPaths.IndexOf(extendedPath);
-        var nextPath = allPaths[(currentIndex + 1) % allPaths.Count];
-
-        foreach (var path in allPaths)
-        {
-            path.Override.Value = path == nextPath;
-        }
-
-        nextPath.AssignPath();
-
-        PathsPlusPlusMod.Preferences.SaveToFile(false);
-
         var before = scrollPanel.ScrollContent.transform.localPosition;
 
-        UpdateUi(extendedPath.Tower);
+        var current = PathsPlusPlusMod.DefaultExtendedPaths.TryGetValue(towerId, out var os) ? os[path] : null;
+
+        var paths = PathsPlusPlusMod.ExtendedPathsByTower[towerId][path].Where(p => p.StartTier == tier).ToList();
+        var index = paths.FindIndex(p => p.Id == current);
+        if (tier >= 5 && index < 0) index = 0;
+        index++;
+
+        var newPath = index >= paths.Count ? null : paths[index];
+
+        if (!PathsPlusPlusMod.DefaultExtendedPaths.TryGetValue(towerId, out var overrides))
+            overrides = PathsPlusPlusMod.DefaultExtendedPaths[towerId] = new string?[3];
+
+        overrides[path] = newPath?.Id;
+
+        upgradeScreen.PopulatePaths(Game.instance.model.GetTower(towerId), false);
+        UpdateUi(towerId);
 
         scrollPanel.ScrollContent.transform.localPosition = before;
 
@@ -369,12 +415,27 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
         }
     }
 
+    private static string lastDefaults = null!;
+
     [HarmonyPatch(typeof(UpgradeScreen), nameof(UpgradeScreen.Open))]
     internal static class UpgradeScreen_Open
     {
         [HarmonyPostfix]
         private static void Postfix(UpgradeScreen __instance)
         {
+            lastDefaults = JsonConvert.SerializeObject(PathsPlusPlusMod.DefaultExtendedPaths);
+
+            foreach (var (_, defaults) in PathsPlusPlusMod.DefaultExtendedPaths)
+            {
+                for (var p = 0; p < defaults.Length; p++)
+                {
+                    if (defaults[p] is { } pathId && !PathsPlusPlusMod.PathsById.ContainsKey(pathId))
+                    {
+                        defaults[p] = null;
+                    }
+                }
+            }
+
             foreach (var upgradeDetails in __instance.GetComponentsInChildren<UpgradeDetails>())
             {
                 if (upgradeDetails.gameObject.HasComponent(out Animator animator))
@@ -401,6 +462,11 @@ internal class UpgradeScreenPlusPlus : MonoBehaviour
                     animator.speed = 1f;
                     animator.Play("PopupScaleOut");
                 }
+            }
+
+            if (JsonConvert.SerializeObject(PathsPlusPlusMod.DefaultExtendedPaths) != lastDefaults)
+            {
+                ModContent.GetInstance<PathsPlusPlusMod>().SaveModSettings();
             }
         }
     }
