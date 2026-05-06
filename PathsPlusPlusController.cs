@@ -4,6 +4,7 @@ using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
 using Il2CppAssets.Scripts.Unity.UI_New.Popups;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppNinjaKiwi.Common;
 using Il2CppSystem.Collections.Generic;
 using MelonLoader;
@@ -184,14 +185,14 @@ internal class PathsPlusPlusController(IntPtr ptr) : MonoBehaviour(ptr)
             AddNewUpgradeObject();
         }
 
-        if (PathsPlusPlusMod.ExtendedPathsByTower.TryGetValue(tower.Def.baseId, out var extendedPaths))
+        for (var path = 0; path < 3; path++)
         {
-            for (var path = 0; path < 3; path++)
-            {
-                var upgradeButton = menu.upgradeButtons[path]!;
-                var button = upgradeButton.GetComponent<UpgradeObjectPlusPlus>();
-                if (button == null || !button.isActiveAndEnabled) continue;
+            var upgradeButton = menu.upgradeButtons[path]!;
+            var button = upgradeButton.GetComponent<UpgradeObjectPlusPlus>();
+            if (button == null || !button.isActiveAndEnabled) continue;
 
+            if (PathsPlusPlusMod.ExtendedPathsByTower.TryGetValue(tower.Def.baseId, out var extendedPaths))
+            {
                 var tier = upgradeButton.tier;
 
                 var extendedPath = PathPlusPlus.GetPath(tower.tower, path, tier + 1);
@@ -208,11 +209,15 @@ internal class PathsPlusPlusController(IntPtr ptr) : MonoBehaviour(ptr)
                 var possiblePaths = PathPlusPlus.GetPaths(tower.tower, path)
                     .Where(p => p.StartTier == upgradeButton.tier)
                     .ToList();
-                button.CycleShowing(possiblePaths.Count > (tier < 5 || tower.CanUpgradeToParagon(true) ? 0 : 1),
-                    possiblePaths.Select(plus => plus.Id).ToArray());
+                button.CycleShowing(
+                    possiblePaths.Count > (tier < 5 || tower.CanUpgradeToParagon(true) ? 0 : 1) &&
+                    !menu.IsUpgradePathClosed(path), possiblePaths.Select(plus => plus.Id).ToArray());
+            }
+            else
+            {
+                button.CycleShowing(false, new Il2CppStringArray(0));
             }
         }
-
         var popups = menu.transform.GetComponentsInChildren<PopUpFixer>(true);
 
         for (var i = 0; i < moreUpgradeButtons.Count; i++)

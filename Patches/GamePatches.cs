@@ -51,7 +51,7 @@ internal static class UnityToSimulation_UpgradeTower_Impl
         var tiers = tower.GetAllTiers();
         var tier = ++tiers[pathIndex];
 
-        if (!PathPlusPlus.TryGetPath(tower, pathIndex, tier, out var path)) return true;
+        if (!PathPlusPlus.TryGetPath(tower, pathIndex, tier, out var path) || tier <= path.StartTier) return true;
 
         var action = __instance.UnregisterCallback(callbackId, inputId);
         var cost = 99999999f;
@@ -115,18 +115,21 @@ internal static class TowerManager_GetTowerUpgradeCost
 internal static class TowerManager_UpgradeTower
 {
     [HarmonyPrefix]
-    internal static void Prefix(Tower tower, int pathIndex, ref int __state)
+    internal static void Prefix(Tower tower, int pathIndex, bool isParagon, ref int __state)
     {
+        if (isParagon) return;
         __state = tower.GetAllTiers()[pathIndex] + 1;
     }
 
     [HarmonyPostfix]
-    internal static void Postfix(Tower tower, int pathIndex, ref int __state)
+    internal static void Postfix(Tower tower, int pathIndex, bool isParagon, ref int __state)
     {
+        if (isParagon) return;
         var tiers = tower.GetAllTiers();
         if (pathIndex < 0 || pathIndex >= tiers.Count) return;
 
-        if (PathPlusPlus.TryGetPath(tower, pathIndex, __state, out var pathPlusPlus))
+        if (PathPlusPlus.TryGetPath(tower, pathIndex, __state, out var pathPlusPlus) &&
+            __state > pathPlusPlus.StartTier)
         {
             pathPlusPlus.SetTier(tower, __state, true);
         }

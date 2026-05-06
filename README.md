@@ -14,7 +14,9 @@ Toggle "Balanced Mode" to switch from being still only able get up to 5 upgrades
 
 Toggling off Balanced Mode can also function well with Ultimate Crosspathing, allowing you to get 5/5/5/5/... towers (assuming the Mod Creators were keeping it in mind while coding).
 
-## Mods
+## Example Mods
+
+<!-- TODO if these mods become updated again they can be reincluded
 
 ### [Jonyboylovespie's 4th Paths](https://github.com/Jonyboylovespie/4thPaths/releases/latest) (Mod Jam First Place)
 
@@ -22,9 +24,15 @@ Toggling off Balanced Mode can also function well with Ultimate Crosspathing, al
 
 ### [Fishythecrafter's Bomb Shooter Path](https://github.com/Fishythecrafter/BombShooterPath-/releases/latest) (Mod Jam Third Place)
 
-### [doombubbles' Tornado Wizards](https://github.com/doombubbles/tornado-wizards#readme) (Primary Example)
+-->
 
-![Screenshot](Screenshot.png)
+### [doombubbles' Tornado Wizards](https://github.com/doombubbles/tornado-wizards#readme)
+
+![Tornado Wizards Screenshot](https://github.com/doombubbles/tornado-wizards/blob/main/Screenshot2.png?raw=true)
+
+### [doombubbles' Mirror Universe Paths](https://github.com/doombubbles/mirror-universe-paths#readme)
+
+![Mirror Universe Paths Screenshot](https://github.com/doombubbles/mirror-universe-paths/blob/main/Screenshot.png?raw=true)
 
 ## For Modders: Creating your own Path++ mod
 
@@ -102,14 +110,12 @@ public static class ModHelperData
 ### Create your PathPlusPlus
 
 Each Path++ path begins with creating a very simple class just to register your path.
-All it needs to specify is which tower the path is for, and how many upgrades your adding.
+All it needs to specify is which tower the path is for. `UpgradeCount` is set automatically based on how many upgrade classes you add.
 
 ```cs
 public class DartMonkeyFourthPath : PathPlusPlus
 {
     public override string Tower => TowerType.DartMonkey;
-
-    public override int UpgradeCount => 0; // Increase this up to 5 as you create your Upgrades
 }
 ```
 
@@ -117,22 +123,16 @@ Similarly to `ModTowers` from Mod Helper, your `UpgradeCount` should reflect how
 
 ### Extending a Vanilla Path
 
-If you are instead want to add additional upgrades to a vanilla path, create your `PathPlusPlus` with an override for the `ExtendsVanillaPath` property like so.
+If you instead want to add additional upgrades to a vanilla path, create your `PathPlusPlus` with an override for the `ExtendsVanillaPath` property like so.
 
 ```csharp
 public class DartMonkeyTopPath : PathPlusPlus
 {
     public override string Tower => TowerType.DartMonkey;
     
-    public override int ExtendVanillaPath => Tops;
-
-    public override int UpgradeCount => 6; // Adding one new upgrade to bring the total upgrades up to 6
+    public override int ExtendVanillaPath => Top;
 }
 ```
-
-In this case, you will be setting `UpgradeCount` to be the new maximum amount of upgrades that you want the path to go to.
-For example, setting it to 6 means that you are adding 1 additional upgrade sixth tier upgrade after the tower's 5 included tiers.
-
 
 ### Create your UpgradePlusPlus(s)
 
@@ -164,19 +164,19 @@ public class BetterDarts : UpgradePlusPlus<DartMonkeyFourthPath>
 
 There are many familiar properties shared from `ModUpgrade` that all function basically the same, i.e. `Cost`, `Tier`, `Icon`, `Description`, `DisplayName` and `ApplyUpgrade`.
 
-If you do not specify a `Portrait`, the 000 tower portrait will be used.
+If you do not specify a `Portrait`, it will try to find an image from your mod with name `{Path.Name}{Tier}.png` such as `DartMonkeyFourthPath1.png`, otherwise the default tower portrait will be used.
 
-If your upgrade adds an ability to the tower, override the `Ability` property to be true.
+If your upgrade adds an ability to the tower, override the `Ability` property to be true so it shows the lightning bolt in the Upgrade Screen.
 
 If you want to change the container background for your upgrade in the upgrade screen, you can override the `Container` property with a string GUID.
 Some standard options you may want are the default `VanillaSprites.UpgradeContainerBlue`, `VanillaSprites.UpgradeContainerTier5`, or `VanillaSprites.UpgradeContainerParagon`.
-Additionally, the `UpgradePlusPlus` class contains some some extra sprites that would be good options for Tier 6+ Upgrades including `UpgradeContainerPlatinum`, `UpgradeContainerDiamond` and `UpgradeContainerRainbow`.
+Additionally, the `UpgradePlusPlus` class contains some extra sprites that would be good options for Tier 6+ Upgrades including `UpgradeContainerPlatinum`, `UpgradeContainerDiamond` and `UpgradeContainerRainbow`.
 
 ### Upgrade effects
 
 When implementing `ApplyUpgrade` code, it's important for you to try to make as few assumptions as possible in order to increase compatability and prevent bugs with other paths.
 
-Whenever you can, use `GetDescendants` to easily affect all instances of a given Model type within the TowerModel.
+Whenever you can, use `model.GetDescendants<T>()` to easily affect all instances of a given type anywhere nested within the model.
 
 For modifying something specific, retrieve it by name if possible rather than just relying on the order. (e.g. `weapons.FirstOrDefault(model => model.name == ...)` instead of `weapons[2]`)
 
@@ -185,5 +185,16 @@ For modifying something specific, retrieve it by name if possible rather than ju
 You can use the `MultiPathPlusPlus` and `MultiUpdatePlusPlus` classes for making paths that apply to multiple towers.
 
 Apart from overriding `Towers` instead of `Tower`, usage will be the same
+
+### Alternate Vanilla Path Branches
+
+New with version 1.2, your Path++s that extend vanilla paths can begin before Tier 6 and create an alternate branch of the vanilla path.
+These paths must add all upgrades from their starting tier through at least tier 5 to be valid.
+Users will be able to cycle between the vanilla and alternate path(s) on a per-tower basis in game as well as in the upgrade screen (which sets the default).
+
+All you have to do is give your `UpgradePlusPlus` classes a Tier <= 5, and if your `PathPlusPlus` class's `ExtendVanillaPath` value is properly set it'll do the rest
+
+Optionally there's a `PathPlusPlus.UseUpgradedTowerModels` override that can be set to true to make the base TowerModel for the upgrades be the corresponding upgraded version on the original path, rather than the last TowerModel before the branching off point
+
 
 [![Requires BTD6 Mod Helper](https://raw.githubusercontent.com/gurrenm3/BTD-Mod-Helper/master/banner.png)](https://github.com/gurrenm3/BTD-Mod-Helper#readme)

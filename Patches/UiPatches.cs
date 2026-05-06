@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using BTD_Mod_Helper;
+using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
 using Il2CppAssets.Scripts.Models.Towers.Upgrades;
@@ -110,7 +111,7 @@ internal static class UpgradeObject_LoadUpgrades
             upgradeObj.GetPath() is not { } path ||
             !upgradeObj.IsExtra) return;
 
-        var tower = __instance.towerSelectionMenu.selectedTower.tower;
+        var tower = __instance.tts.tower;
 
         UpgradeModel? upgradeModel = null;
 
@@ -133,7 +134,8 @@ internal static class UpgradeObject_LoadUpgrades
             upgradeButton.UpdateVisuals(__instance.path, upgradeModel.tier + 1, false);
         }
 
-        if (__instance.tier > 0 && (__instance.path > 2 || __instance.tier > path.StartTier))
+        if (__instance.tier > 0 && (__instance.path > 2 || __instance.tier > path.StartTier) &&
+            path.Upgrades.ContainsKey(__instance.tier - 1))
         {
             __instance.currentUpgradeModel = InGame.Bridge.Model.GetUpgrade(path.Upgrades[__instance.tier - 1].Id);
             __instance.currentUpgrade.SetUpgradeModel(__instance.currentUpgradeModel, __instance.tts);
@@ -325,7 +327,9 @@ internal static class TowerSelectionMenu_DisplayClass_UpgradeTower
     }
 }
 
-// Adding extra upgrade pips
+/// <summary>
+/// Adding extra upgrade pips
+/// </summary>
 [HarmonyPatch(typeof(UpgradeObject), nameof(UpgradeObject.SetTier), typeof(int), typeof(int), typeof(int))]
 internal static class UpgradeObject_SetTier
 {
@@ -337,7 +341,7 @@ internal static class UpgradeObject_SetTier
         var tiers = __instance.tiers.ToList();
         var baseTier = tiers[0]!;
 
-        var show = __instance.CheckBlockedPath();
+        var show = Math.Max(maxTier, 5);
 
         if (__instance.gameObject.HasComponent(out UpgradeObjectPlusPlus upgradePlusPlus))
         {
@@ -377,8 +381,7 @@ internal static class UpgradeButton_OnPointerDown
     [HarmonyPostfix]
     private static void Postfix(UpgradeButton __instance, PointerEventData eventData)
     {
-        if (eventData.button == PointerEventData.InputButton.Right &&
-            TowerSelectionMenu.instance.selectedTower.CanUpgradeToParagon(true))
+        if (eventData.button == PointerEventData.InputButton.Right)
         {
             __instance.GetComponentInParent<UpgradeObjectPlusPlus>().Exists()?.CycleUpgrade();
         }

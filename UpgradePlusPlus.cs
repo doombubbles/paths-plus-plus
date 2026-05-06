@@ -77,6 +77,7 @@ public abstract class UpgradePlusPlus : NamedModContent
         !string.IsNullOrEmpty(Portrait)
             ? GetSpriteReferenceOrDefault(Portrait)
             : GetSpriteReferenceOrNull(Path.Name) ??
+              GetSpriteReferenceOrNull(Path.Name + Tier) ??
               CreateSpriteReference(VanillaSprites.ByName.GetValueOrDefault(VanillaPortrait));
 
     private string VanillaPortrait
@@ -224,6 +225,27 @@ public abstract class UpgradePlusPlus : NamedModContent
     /// </summary>
     /// <param name="tower">The tower getting the upgrade</param>
     public virtual void OnAttached(Tower tower)
+    {
+    }
+
+
+    /// <summary>
+    /// Like <see cref="ApplyUpgrade(TowerModel)"/>, but runs after all other upgrades have been applied."/>
+    /// </summary>
+    /// <param name="towerModel">The tower to apply to</param>
+    public virtual void LateApplyUpgrade(TowerModel towerModel)
+    {
+    }
+
+    /// <summary>
+    /// Like <see cref="ApplyUpgrade(TowerModel,int)"/>, but runs after all other upgrades have been applied."/>
+    /// <br/>
+    /// The tier parameter is mostly useful for skipping applying any effects that would be overriden by later upgrades
+    /// in this path
+    /// </summary>
+    /// <param name="towerModel">The tower to apply to</param>
+    /// <param name="tier">The total tier that this tower has in this Upgrade Path</param>
+    public virtual void LateApplyUpgrade(TowerModel towerModel, int tier)
     {
     }
 }

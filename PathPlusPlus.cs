@@ -5,18 +5,19 @@ using BTD_Mod_Helper;
 using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Api.Towers;
 using BTD_Mod_Helper.Extensions;
+using HarmonyLib;
+using Il2CppAssets.Scripts.Models;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Behaviors;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Unity;
-using MelonLoader;
 
 namespace PathsPlusPlus;
 
 /// <summary>
 /// Class to register your path, defining what tower its for and how many upgrades you're adding
 /// </summary>
-public abstract class PathPlusPlus : ModContent
+public abstract class PathPlusPlus : NamedModContent
 {
     /// <inheritdoc />
     protected sealed override float RegistrationPriority => 11;
@@ -170,27 +171,41 @@ public abstract class PathPlusPlus : ModContent
     /// <param name="tier">Up to and including this tier number</param>
     public void Apply(TowerModel tower, int tier)
     {
+        if (tower.isParagon) return; // TODO check with Honorary Paragons
+
         tower.tier = Math.Max(tower.tier, Math.Min(5, tier));
         var appliedUpgrades = tower.appliedUpgrades.ToList();
 
-        if (UseUpgradedTowerModels)
+        if (ExtendVanillaPath >= 0 && StartTier < 5)
         {
-            foreach (var upgradeModel in tower.appliedUpgrades.Select(Game.instance.model.GetUpgrade))
+            if (UseUpgradedTowerModels)
             {
-                if (upgradeModel.path == Path && upgradeModel.tier >= StartTier)
+                foreach (var upgradeModel in tower.appliedUpgrades.Select(GameModel.Current.GetUpgrade))
                 {
-                    appliedUpgrades.Remove(upgradeModel.name);
+                    if (upgradeModel.path == Path && upgradeModel.tier >= StartTier)
+                    {
+                        appliedUpgrades.Remove(upgradeModel.name);
+                    }
                 }
             }
+            else if (tier > 0)
+            {
+                var tierString = tower.tiers.Join(delimiter: "");
+                tower.tiers[ExtendVanillaPath] = Math.Clamp(tier, 0, 5);
+                tower.name = tower.name.Replace(tierString, tower.tiers.Join(delimiter: ""));
+            }
         }
+
+        var upgrades = new List<UpgradePlusPlus>();
 
         for (var i = 0; i < tier; i++)
         {
             if (!Upgrades.TryGetValue(i, out var upgrade) || appliedUpgrades.Contains(upgrade.Id)) continue;
 
+            upgrades.Add(upgrade);
             upgrade.ApplyUpgrade(tower);
             upgrade.ApplyUpgrade(tower, tier);
-            if (upgrade.IsHighestUpgrade(tower) && upgrade.PortraitReference is not null)
+            if (upgrade.IsHighestUpgrade(tower, true) && upgrade.PortraitReference is not null)
             {
                 tower.portrait = upgrade.PortraitReference;
             }
@@ -198,6 +213,12 @@ public abstract class PathPlusPlus : ModContent
         }
 
         tower.appliedUpgrades = appliedUpgrades.ToArray();
+
+        foreach (var upgrade in upgrades)
+        {
+            upgrade.LateApplyUpgrade(tower);
+            upgrade.LateApplyUpgrade(tower, tier);
+        }
     }
 
     /// <summary>

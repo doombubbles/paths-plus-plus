@@ -390,6 +390,8 @@ internal class UpgradeScreenPlusPlus(IntPtr ptr) : MonoBehaviour(ptr)
 
         overrides[path] = newPath?.Id;
 
+        var selected = upgradeScreen.selectedDetails;
+
         upgradeScreen.PopulatePaths(Game.instance.model.GetTower(towerId), false);
         UpdateUi(towerId);
 
@@ -397,6 +399,11 @@ internal class UpgradeScreenPlusPlus(IntPtr ptr) : MonoBehaviour(ptr)
 
         upgradeDetails.OnPointerExit(null);
         upgradeDetails.OnPointerEnter(null);
+
+        if (selected != null && selected.gameObject.activeInHierarchy)
+        {
+            upgradeScreen.SelectUpgrade(selected);
+        }
     }
 
     [HarmonyPatch(typeof(UpgradeScreen), nameof(UpgradeScreen.UpdateUi))]

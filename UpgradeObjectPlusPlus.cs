@@ -24,7 +24,7 @@ internal class UpgradeObjectPlusPlus(IntPtr ptr) : MonoBehaviour(ptr)
 
     public ModHelperButton? cycle;
 
-    public Il2CppStringArray cyclePathIds = null!;
+    public Il2CppStringArray? cyclePathIds;
 
     public void InitForTower(TowerToSimulation tts, string path)
     {
@@ -87,6 +87,8 @@ internal class UpgradeObjectPlusPlus(IntPtr ptr) : MonoBehaviour(ptr)
 
     public void CycleUpgrade()
     {
+        if (cyclePathIds == null || !cyclePathIds.Any() || cycle == null) return;
+
         MenuManager.instance.buttonClick3Sound.Play();
 
         var paths = cyclePathIds.Select(s => PathsPlusPlusMod.PathsById[s]).ToList();
@@ -99,8 +101,8 @@ internal class UpgradeObjectPlusPlus(IntPtr ptr) : MonoBehaviour(ptr)
 
         PathPlusPlus? nextPath;
 
-        var showingPath =  PathPlusPlus.GetPath(tts.tower, path, tier + 1);
-        if (!overrideParagon && paragonInvolved )
+        var showingPath = PathPlusPlus.GetPath(tts.tower, path, tier + 1);
+        if (!overrideParagon && paragonInvolved)
         {
             overrideParagon = true;
             nextPath = paths.First();
@@ -129,5 +131,22 @@ internal class UpgradeObjectPlusPlus(IntPtr ptr) : MonoBehaviour(ptr)
 
         pathId = nextPath?.Id;
         upgradeObject.LoadUpgrades();
+    }
+
+    private int delay;
+
+    private void Update()
+    {
+        if (delay > 0)
+        {
+            delay--;
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.Mouse2))
+        {
+            delay = 30;
+            CycleUpgrade();
+        }
     }
 }
